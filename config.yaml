@@ -14,9 +14,9 @@ data_config:
 ---
 fed_config:
   C: 1
-  K: 4
+  K: 10
   R: 1000
   B: 32
-  E: 2
+  E: 3
   lr: 0.01
   target_acc: 0.99
