@@ -146,7 +146,7 @@ class Server(object):
             printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=self.FLgroup)
             
-            acc, loss = self.evaluate(self.model)
+            acc, loss = self.evaluate()
             printLog(f"PS >> 글로벌 모델 test_accuracy: {round(acc*100,4)}%, test_loss: {round(loss,4)}")
 
 
@@ -158,7 +158,7 @@ class Server(object):
             printLog(f"PS >> 선택된 클라이언트들의 로컬 모델을 모두 받았습니다.")
 
             self.average_aggregation(selected_client_idx)
-            acc, loss = self.evaluate(self.model)
+            acc, loss = self.evaluate()
             self.current_round+=1
             printLog(f"PS >> {self.current_round}번째 글로벌 모델 test_accuracy: {round(acc*100,4)}%, test_loss: {round(loss,4)}")
 

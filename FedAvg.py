@@ -1,4 +1,3 @@
-from mpi4py import MPI
 from Server import Server
 from Client import Client
 from utils import printLog
@@ -15,7 +14,7 @@ WORLD_SIZE = int(os.environ['WORLD_SIZE'])
 WORLD_RANK = int(os.environ['RANK'])
 
 def init_FL(rank, size, FLgroup): 
-    with open('/home/wise/miri/mpitest/FedAvg/config.yaml') as f:
+    with open('./config.yaml') as f:
         configs = list(yaml.load_all(f, Loader=yaml.FullLoader))
         wandb_config = configs[0]["wandb_config"]
         data_config = configs[1]["data_config"]
@@ -36,7 +35,6 @@ def init_FL(rank, size, FLgroup):
 
 
 def init_process(rank, size, backend='gloo'):
-
     FLgroup = dist.init_process_group(backend, rank=rank, world_size=size, init_method=f'tcp://{MASTER_ADDR}:{MASTER_PORT}')
     init_FL(rank, size, FLgroup)
 
