@@ -14,7 +14,6 @@ data_config:
 ---
 fed_config:
   C: 1
-  K: 10
   R: 1000
   B: 32
   E: 3

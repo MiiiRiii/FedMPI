@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 
 class Server(object):
     def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, FLgroup):
-        self.num_clients = num_clients
+        self.num_clients = int(num_clients)
         self.selection_ratio = selection_ratio
         self.target_rounds = target_rounds
         self.target_accuracy = target_accuracy

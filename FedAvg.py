@@ -23,13 +23,13 @@ def init_FL(rank, size, FLgroup):
         
     if rank == 0:
         printLog(f"I am server in {socket.gethostname()} rank {rank}")           
-        ps=Server(fed_config["K"], fed_config["C"], fed_config["B"], fed_config["R"], fed_config["target_acc"], FLgroup)
+        ps=Server(size-1, fed_config["C"], fed_config["B"], fed_config["R"], fed_config["target_acc"], FLgroup)
         ps.setup(data_config)
         ps.start()
     
     else:
         printLog(f"I am client in {socket.gethostname()} rank {rank}")
-        client = Client(fed_config["K"], fed_config["C"], fed_config["B"], fed_config["E"], fed_config["lr"], data_config["dataset_name"], FLgroup)
+        client = Client(size-1, fed_config["C"], fed_config["B"], fed_config["E"], fed_config["lr"], data_config["dataset_name"], FLgroup)
         client.setup()
         client.start()
         
