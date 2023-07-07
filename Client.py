@@ -105,7 +105,6 @@ class Client(object):
             if(selected):
                 self.receive_global_model_from_server()
                 self.train()
-                printLog(f"CLIENT {self.id} >> 로컬 데이터셋으로 평가한 로컬 모델: acc={round(acc*100,4)}%, loss={round(loss,4)}")
                 self.send_local_model_to_server()
 
             dist.barrier()
