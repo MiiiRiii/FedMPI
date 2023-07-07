@@ -37,7 +37,7 @@ def init_FL(rank, size, FLgroup):
 
 def init_process(rank, size, backend='gloo'):
 
-    FLgroup = dist.init_process_group(backend, rank=rank, world_size=size)
+    FLgroup = dist.init_process_group(backend, rank=rank, world_size=size, init_method=f'tcp://{MASTER_ADDR}:{MASTER_PORT}')
     init_FL(rank, size, FLgroup)
 
 if __name__ == "__main__":
