@@ -13,9 +13,9 @@ data_config:
   split: "gaussian"
 ---
 fed_config:
-  C: 1
+  C: 0.1
   R: 1000
   B: 32
-  E: 3
+  E: 5
   lr: 0.01
   target_acc: 0.99

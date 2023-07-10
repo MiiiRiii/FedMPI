@@ -107,6 +107,7 @@ class Client(object):
                 self.train()
                 self.send_local_model_to_server()
 
+            printLog(f"CLIENT {self.id} >> dist barrier도달")
             dist.barrier()
             continueFL = torch.zeros(1)
             dist.broadcast(tensor=continueFL, src=0, group=self.FLgroup)

@@ -162,6 +162,7 @@ class Server(object):
             self.current_round+=1
             printLog(f"PS >> {self.current_round}번째 글로벌 모델 test_accuracy: {round(acc*100,4)}%, test_loss: {round(loss,4)}")
 
+            printLog(f"PS >> dist barrier도달")
             dist.barrier()
             
             if acc>=self.target_accuracy:
