@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument("--target_acc")
 
     parser.add_argument("--dataset", type=str)
-    parser.add_argument("--iid", tpye=bool)
+    parser.add_argument("--iid", type=bool)
     parser.add_argument("--split", type=str)
 
     parser.add_argument("--wandb_on", type=bool)
