@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--selection_ratio", type=float)
     parser.add_argument("--round", type=int)
-    parser.add_argument("--batch_size", tpye=int)
+    parser.add_argument("--batch_size", type=int)
     parser.add_argument("--local_epochs", type=int)
     parser.add_argument("--lr",type=float)
     parser.add_argument("--target_acc")
