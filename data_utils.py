@@ -54,6 +54,8 @@ def positive_int_gauss_random(mean, std):
 def create_dataset(num_clients, dataset_name, iid, split):
     num_shards=200
     data_path="./data/"
+    iid = (iid=="True")
+    
     if dataset_name in ["CIFAR10"] :
             transform = torchvision.transforms.Compose(
                 [
@@ -103,7 +105,6 @@ def create_dataset(num_clients, dataset_name, iid, split):
                 torch.split(torch.Tensor(training_labels), split_size)
             )
         )
-
         # finalize bunches of local datasets
         local_datasets = [
             CustomTensorDataset(local_dataset, transform=transform)
