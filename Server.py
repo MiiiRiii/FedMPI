@@ -32,6 +32,7 @@ class Server(object):
         self.current_round=0
         
     def setup(self, dataset, iid, split):
+        
         # global model초기화    
         printLog(f"PS >> global model을 초기화 합니다.")
         if(dataset=="CIFAR10"):

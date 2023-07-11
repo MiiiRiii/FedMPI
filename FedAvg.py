@@ -16,20 +16,17 @@ WORLD_SIZE = int(os.environ['WORLD_SIZE'])
 WORLD_RANK = int(os.environ['RANK'])
 
 def init_FL(rank, size, FLgroup, args): 
-    
-    
-    if args.wandb_on == True:
-        wandb.init(project=args.project, entity=args.entity, group=args.group, name=args.name,
-                   config={
-            "num_clients": size-1,
-            "batch_size": args.batch_size,
-            "local_epoch": args.local_epochs,
-            "learning_rate": args.lr,
-            "dataset": args.dataset,
-            "data_split": args.split,
-        })
-
     if rank == 0:
+        if args.wandb_on == True:
+            wandb.init(project=args.project, entity=args.entity, group=args.group, name=args.name,
+                    config={
+                "num_clients": size-1,
+                "batch_size": args.batch_size,
+                "local_epoch": args.local_epochs,
+                "learning_rate": args.lr,
+                "dataset": args.dataset,
+                "data_split": args.split,
+            })
         printLog(f"I am server in {socket.gethostname()} rank {rank}")           
         ps=Server(size-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
         ps.setup(args.dataset, args.iid, args.split)
