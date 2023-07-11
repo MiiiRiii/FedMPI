@@ -51,8 +51,9 @@ def positive_int_gauss_random(mean, std):
 
     return sampled_value
 
-def create_dataset(num_clients, data_path, dataset_name, num_shards, iid, split):
-
+def create_dataset(num_clients, dataset_name, iid, split):
+    num_shards=200
+    data_path="./data/"
     if dataset_name in ["CIFAR10"] :
             transform = torchvision.transforms.Compose(
                 [

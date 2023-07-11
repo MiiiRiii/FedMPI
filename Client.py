@@ -15,13 +15,13 @@ from model_utils import TensorBuffer
 
 
 class Client(object):
-    def __init__(self, num_clients, selection_ratio, batch_size, local_epoch, lr, dataset_name, FLgroup):
+    def __init__(self, num_clients, selection_ratio, batch_size, local_epoch, lr, dataset, FLgroup):
         self.id=dist.get_rank()
         self.num_selected_clients = int(num_clients * selection_ratio)
         self.batch_size = batch_size
         self.local_epoch = local_epoch
         self.lr = lr
-        self.dataset_name=dataset_name
+        self.dataset_name=dataset
         
         self.FLgroup = FLgroup
     
@@ -82,8 +82,6 @@ class Client(object):
         dist.recv(tensor=model_tb.buffer, src=0)
         model_tb.unpack(model_state_dict.values())
         self.model.load_state_dict(model_state_dict)
-  
-        dist.barrier()
 
     def send_local_model_to_server(self):
         flatten_model=TensorBuffer(list(self.model.state_dict().values()))
@@ -107,8 +105,8 @@ class Client(object):
                 self.train()
                 self.send_local_model_to_server()
 
-            printLog(f"CLIENT {self.id} >> dist barrier도달")
             dist.barrier()
+
             continueFL = torch.zeros(1)
             dist.broadcast(tensor=continueFL, src=0, group=self.FLgroup)
             if(continueFL[0]==0): #FL 종료

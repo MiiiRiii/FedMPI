@@ -3,6 +3,7 @@ import torch
 import yaml
 import numpy as np
 import copy
+import wandb
 
 from utils import *
 from model_utils import TensorBuffer
@@ -17,7 +18,8 @@ from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 
 class Server(object):
-    def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, FLgroup):
+    def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup):
+        self.wandb_on = wandb_on
         self.num_clients = int(num_clients)
         self.selection_ratio = selection_ratio
         self.target_rounds = target_rounds
@@ -29,12 +31,12 @@ class Server(object):
         self.len_local_dataset=[]
         self.current_round=0
         
-    def setup(self, data_config):
+    def setup(self, dataset, iid, split):
         # global model초기화    
         printLog(f"PS >> global model을 초기화 합니다.")
-        if(data_config["dataset_name"]=="CIFAR10"):
+        if(dataset=="CIFAR10"):
             self.model_controller = CNN_Cifar10
-        elif(data_config["dataset_name"]=="MNIST"):
+        elif(dataset=="MNIST"):
             self.model_controller = CNN_Mnist
 
         self.model = self.model_controller.Model()
@@ -49,7 +51,7 @@ class Server(object):
 
         # train 데이터 분할
         printLog(f"PS >> 데이터셋을 다운받습니다.")
-        train_datasets, self.test_data = create_dataset(self.num_clients, **data_config)
+        train_datasets, self.test_data = create_dataset(self.num_clients, dataset, iid, split)
 
         dist.barrier()
         
@@ -74,8 +76,7 @@ class Server(object):
         flatten_model = TensorBuffer(list(self.model.state_dict().values()))
         for idx in selected_client_idx:
             dist.send(tensor=flatten_model.buffer, dst=idx)
-            
-        dist.barrier()
+
 
     def receive_local_model_from_selected_clients(self, selected_client_idx):
         reqs=[]
@@ -145,10 +146,6 @@ class Server(object):
             selected_client_idx = client_random_select(clients_idx, int(self.selection_ratio*self.num_clients))
             printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=self.FLgroup)
-            
-            acc, loss = self.evaluate()
-            printLog(f"PS >> 글로벌 모델 test_accuracy: {round(acc*100,4)}%, test_loss: {round(loss,4)}")
-
 
             printLog(f"PS >> 선택된 클라이언트들에게 글로벌 모델을 보냅니다.")
             self.send_global_model_to_selected_clients(selected_client_idx)
@@ -162,7 +159,9 @@ class Server(object):
             self.current_round+=1
             printLog(f"PS >> {self.current_round}번째 글로벌 모델 test_accuracy: {round(acc*100,4)}%, test_loss: {round(loss,4)}")
 
-            printLog(f"PS >> dist barrier도달")
+            if self.wandb_on==True:
+                wandb.log({"test_acuracy": round(acc*100,4), "test_loss":round(loss,4)})
+
             dist.barrier()
             
             if acc>=self.target_accuracy:
@@ -174,5 +173,6 @@ class Server(object):
                 printLog(f"PS >> 목표한 라운드 수에 도달했으며, 최종 정확도는 {round(acc*100,4)}% 입니다.")
                 break
             else:
+                printLog(f"PS >> 다음 라운드를 수행합니다.")
                 dist.broadcast(tensor=torch.tensor([1.]), src=0, group=self.FLgroup)
                
