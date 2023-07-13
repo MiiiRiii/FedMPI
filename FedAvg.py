@@ -43,6 +43,7 @@ def init_FL(FLgroup, args):
         
 def init_process(args, backend='gloo'):
     os.environ["OMP_NUM_THREADS"]=args.omp_num_threads
+    printLog(f"omp_num_threads={os.environ['OMP_NUM_THREADS']}")
     FLgroup = dist.init_process_group(backend, rank=WORLD_RANK, world_size=WORLD_SIZE, init_method=f'tcp://{MASTER_ADDR}:{MASTER_PORT}')
     init_FL(FLgroup, args)
 
