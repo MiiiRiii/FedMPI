@@ -1,6 +1,6 @@
 import torch.distributed as dist
 import torch
-import torchvision
+import time
 
 from torch.utils.data import DataLoader
 from torch.optim import SGD
@@ -22,6 +22,8 @@ class Client(object):
         self.local_epoch = local_epoch
         self.lr = lr
         self.dataset_name=dataset
+        self.total_train_time=0
+        self.num_of_selected=0
         
         self.FLgroup = FLgroup
     
@@ -61,8 +63,10 @@ class Client(object):
         
     def train(self):
         printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
+        self.num_of_selected += 1
         self.model.train()
 
+        start=time.time()
         optimizer = SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
         loss_function = CrossEntropyLoss()
         dataloader = DataLoader(self.dataset, self.batch_size, shuffle=True)
@@ -75,6 +79,8 @@ class Client(object):
                 loss.backward()
                 optimizer.step()
             printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
+        
+        self.total_train_time += time.time()-start
     
     def receive_global_model_from_server(self):
         model_state_dict = self.model.state_dict()
@@ -103,6 +109,7 @@ class Client(object):
             if(selected):
                 self.receive_global_model_from_server()
                 self.train()
+                printLog(f"CLIENT {self.id} >> 평균 학습 소요 시간: {self.total_train_time/self.num_of_selected}")
                 self.send_local_model_to_server()
 
             dist.barrier()
