@@ -42,7 +42,7 @@ def init_FL(FLgroup, args):
         wandb.finish()
         
 def init_process(args, backend='gloo'):
-
+    os.environ["OMP_NUM_THREADS"]=args.omp_num_threads
     FLgroup = dist.init_process_group(backend, rank=WORLD_RANK, world_size=WORLD_SIZE, init_method=f'tcp://{MASTER_ADDR}:{MASTER_PORT}')
     init_FL(FLgroup, args)
 
@@ -54,6 +54,7 @@ if __name__ == "__main__":
     parser.add_argument("--local_epochs", type=int)
     parser.add_argument("--lr",type=float)
     parser.add_argument("--target_acc", type=float)
+    parser.add_argument("--omp_num_threads", type=str)
 
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--iid", type=str)

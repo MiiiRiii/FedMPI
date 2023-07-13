@@ -62,6 +62,8 @@ class Server(object):
     def send_local_train_dataset_to_clients(self, train_datasets):
         self.len_local_dataset.append(-1)
         for idx, dataset in enumerate(train_datasets):
+            if idx==0:
+                break
             len_dataset = len(dataset)
             self.len_local_dataset.append(len_dataset)
             for tensor in dataset.tensors:
