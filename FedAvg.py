@@ -9,12 +9,12 @@ import os
 import socket
 import wandb
 import argparse
+import torch
 
 MASTER_ADDR = os.environ['MASTER_ADDR']
 MASTER_PORT = os.environ['MASTER_PORT']
 WORLD_SIZE = int(os.environ['WORLD_SIZE'])
 WORLD_RANK = int(os.environ['RANK'])
-
 def init_FL(FLgroup, args): 
     if WORLD_RANK == 0:
         if args.wandb_on == "True":
@@ -33,6 +33,7 @@ def init_FL(FLgroup, args):
         ps.start()
     
     else:
+        torch.set_num_threads(args.omp_num_threads)
         printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
         client = Client(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
         client.setup()
@@ -53,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument("--local_epochs", type=int)
     parser.add_argument("--lr",type=float)
     parser.add_argument("--target_acc", type=float)
-    parser.add_argument("--omp_num_threads", type=str)
+    parser.add_argument("--omp_num_threads", type=int)
 
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--iid", type=str)
