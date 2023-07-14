@@ -4,7 +4,6 @@ from utils import printLog
 
 import torch.distributed as dist
 import torch.multiprocessing as mp
-import yaml
 import os
 import socket
 import wandb
@@ -31,7 +30,12 @@ def init_FL(FLgroup, args):
         ps=Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
         ps.setup(args.dataset, args.iid, args.split)
         ps.start()
-    
+        avg_train_time=[torch.empty(1) for i in range(WORLD_SIZE)]
+        dist.gather(torch.tensor([-1]), gather_list=avg_train_time, dst=0, group=FLgroup)
+        print(avg_train_time)
+
+        if args.wandb_on == True:
+            wandb.finish()
     else:
         torch.set_num_threads(args.omp_num_threads)
         printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
@@ -39,8 +43,6 @@ def init_FL(FLgroup, args):
         client.setup()
         client.start()
     
-    if args.wandb_on == True:
-        wandb.finish()
         
 def init_process(args, backend='gloo'):
     FLgroup = dist.init_process_group(backend, rank=WORLD_RANK, world_size=WORLD_SIZE, init_method=f'tcp://{MASTER_ADDR}:{MASTER_PORT}')
