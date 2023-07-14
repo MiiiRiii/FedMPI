@@ -140,13 +140,18 @@ class Server(object):
                     averaged_weights[key] += coefficient[client_idx] * local_weights[key]
 
         self.model.load_state_dict(averaged_weights)
+    
         
     def start(self):
         clients_idx = [idx for idx in range(1,self.num_clients+1)]
-        
+        selected_client=[0 for idx in range(1,self.num_clients+1)]
         while True:
             
             selected_client_idx = client_random_select(clients_idx, int(self.selection_ratio*self.num_clients))
+            for idx in selected_client_idx:
+                selected_client[idx-1]=1
+            if(sum(selected_client)==self.num_clients):
+                self.current_round=self.target_rounds-1
             printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=self.FLgroup)
 
