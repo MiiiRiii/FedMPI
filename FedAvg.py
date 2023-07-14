@@ -31,7 +31,7 @@ def init_FL(FLgroup, args):
         ps.setup(args.dataset, args.iid, args.split)
         ps.start()
         avg_train_time=[torch.empty(1) for i in range(WORLD_SIZE)]
-        dist.gather(torch.tensor([-1]), gather_list=avg_train_time, dst=0, group=FLgroup)
+        dist.gather(torch.tensor([0]), gather_list=avg_train_time, dst=0, group=FLgroup)
         print(avg_train_time)
 
         if args.wandb_on == True:

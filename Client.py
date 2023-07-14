@@ -117,6 +117,8 @@ class Client(object):
             continueFL = torch.zeros(1)
             dist.broadcast(tensor=continueFL, src=0, group=self.FLgroup)
             if(continueFL[0]==0): #FL 종료
+                if self.num_of_selected==0 :
+                    self.num_of_selected=1
                 dist.gather(torch.tensor([self.total_train_time/self.num_of_selected]),gather_list=[], dst=0, group=self.FLgroup )
                 break
             
