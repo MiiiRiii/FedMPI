@@ -17,9 +17,9 @@ MASTER_PORT = os.environ['MASTER_PORT']
 WORLD_SIZE = int(os.environ['WORLD_SIZE'])
 WORLD_RANK = int(os.environ['RANK'])
 def init_FL(FLgroup, args): 
-    log={'iter_num':[], 'consumed_time':[]}
+    log=[]
     avg_train_time=[torch.empty(1) for i in range(WORLD_SIZE)]
-    for itr in range(2): 
+    for itr in range(10): 
         if WORLD_RANK == 0:
             if args.wandb_on == "True":
                 wandb.init(project=args.project, entity=args.entity, group=args.group, name=args.name,
@@ -45,12 +45,11 @@ def init_FL(FLgroup, args):
             client = Client(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
             client.setup()
             client.start()
-        log["iter_num"].append(itr+1)
+
         avg_train_time_np = np.array([tensor.item() for tensor in avg_train_time])
-        log["consumed_time"].append(avg_train_time_np)
+        log.append(avg_train_time_np)
 
     df = pd.DataFrame(log)
-    df.set_index('iter_num', inplace=True)
     df.to_csv(f"./thread{args.omp_num_threads}.csv")
         
 def init_process(args, backend='gloo'):
