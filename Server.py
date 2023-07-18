@@ -59,6 +59,14 @@ class Server(object):
         printLog(f"PS >> 클라이언트들에게 데이터셋을 분할합니다.")
         self.send_local_train_dataset_to_clients(train_datasets)
 
+        printLog(f"PS >> 클라이언트들에게 local epoch 수를 지정합니다.")
+        clients_local_epoch=set_num_local_epoch_by_random(self.num_clients, 5, 15)
+        self.send_num_local_epoch_to_clients(clients_local_epoch)
+
+    def send_num_local_epoch_to_clients(self, clients_local_epoch):
+        for idx, e in enumerate(clients_local_epoch):
+            dist.send(tesnor=torch.tensor([float(e)]), dst=idx+1)
+
     def send_local_train_dataset_to_clients(self, train_datasets):
         self.len_local_dataset.append(-1)
         for idx, dataset in enumerate(train_datasets):

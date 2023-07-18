@@ -19,7 +19,7 @@ class Client(object):
         self.id=dist.get_rank()
         self.num_selected_clients = int(num_clients * selection_ratio)
         self.batch_size = batch_size
-        self.local_epoch = local_epoch
+        self.local_epoch = 0
         self.lr = lr
         self.dataset_name=dataset
         self.total_train_time=0
@@ -28,7 +28,7 @@ class Client(object):
         self.FLgroup = FLgroup
     
     def setup(self):
-        #printLog(f"CLIENT {self.id} >> 빈 모델을 생성합니다.")
+        printLog(f"CLIENT {self.id} >> 빈 모델을 생성합니다.")
         if(self.dataset_name == "CIFAR10"):
             self.model_controller = CNN_Cifar10
         elif(self.dataset_name == "MNIST"):
@@ -38,12 +38,19 @@ class Client(object):
 
         dist.barrier()
         
-        # train dataset receive
+        # receive train dataset 
         self.receive_local_train_dataset_from_server()
+
+        # receive local epoch 
+        self.receive_num_local_epoch_from_server()
 
         dist.barrier()
 
-
+    def receive_num_local_epoch_from_server(self):
+        tensor = torch.zeros(1)
+        dist.recv(tensor=tensor, src=0)
+        self.local_epoch = tensor.item()
+        printLog(f"CLIENT {self.id} >> local epoch 수는 {self.local_epoch}입니다.")
     
     def receive_local_train_dataset_from_server(self):
 
@@ -62,7 +69,7 @@ class Client(object):
         
         
     def train(self):
-        #printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
+        printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
         self.num_of_selected += 1
         self.model.train()
 
@@ -78,7 +85,7 @@ class Client(object):
                 loss = loss_function(outputs, labels)
                 loss.backward()
                 optimizer.step()
-            #printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
+            printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
         
         self.total_train_time += time.time()-start
     
@@ -109,7 +116,7 @@ class Client(object):
             if(selected):
                 self.receive_global_model_from_server()
                 self.train()
-                #printLog(f"CLIENT {self.id} >> 평균 학습 소요 시간: {self.total_train_time/self.num_of_selected}")
+                printLog(f"CLIENT {self.id} >> 평균 학습 소요 시간: {self.total_train_time/self.num_of_selected}")
                 self.send_local_model_to_server()
 
             dist.barrier()
