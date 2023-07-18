@@ -28,7 +28,7 @@ class Client(object):
         self.FLgroup = FLgroup
     
     def setup(self):
-        printLog(f"CLIENT {self.id} >> 빈 모델을 생성합니다.")
+        #printLog(f"CLIENT {self.id} >> 빈 모델을 생성합니다.")
         if(self.dataset_name == "CIFAR10"):
             self.model_controller = CNN_Cifar10
         elif(self.dataset_name == "MNIST"):
@@ -62,7 +62,7 @@ class Client(object):
         
         
     def train(self):
-        printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
+        #printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
         self.num_of_selected += 1
         self.model.train()
 
@@ -78,7 +78,7 @@ class Client(object):
                 loss = loss_function(outputs, labels)
                 loss.backward()
                 optimizer.step()
-            printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
+            #printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
         
         self.total_train_time += time.time()-start
     
@@ -109,7 +109,7 @@ class Client(object):
             if(selected):
                 self.receive_global_model_from_server()
                 self.train()
-                printLog(f"CLIENT {self.id} >> 평균 학습 소요 시간: {self.total_train_time/self.num_of_selected}")
+                #printLog(f"CLIENT {self.id} >> 평균 학습 소요 시간: {self.total_train_time/self.num_of_selected}")
                 self.send_local_model_to_server()
 
             dist.barrier()
@@ -117,6 +117,7 @@ class Client(object):
             continueFL = torch.zeros(1)
             dist.broadcast(tensor=continueFL, src=0, group=self.FLgroup)
             if(continueFL[0]==0): #FL 종료
+                printLog(f"CLIENT {self.id} >> total train time = {self.total_train_time}, num of selected = {self.num_of_selected}")
                 dist.gather(torch.tensor([self.total_train_time/self.num_of_selected]),gather_list=[], dst=0, group=self.FLgroup )
                 break
             
