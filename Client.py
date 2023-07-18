@@ -44,13 +44,12 @@ class Client(object):
         # receive local epoch 
         self.receive_num_local_epoch_from_server()
 
-        dist.barrier()
-
     def receive_num_local_epoch_from_server(self):
         tensor = torch.zeros(1)
         dist.recv(tensor=tensor, src=0)
         self.local_epoch = tensor.item()
         printLog(f"CLIENT {self.id} >> local epoch 수는 {self.local_epoch}입니다.")
+        dist.barrier()
     
     def receive_local_train_dataset_from_server(self):
 
@@ -66,6 +65,8 @@ class Client(object):
         label = label.type(torch.int64)
         
         self.dataset = applyCustomDataset(self.dataset_name, data, label)
+
+        dist.barrier()
         
         
     def train(self):

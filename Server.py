@@ -66,6 +66,7 @@ class Server(object):
     def send_num_local_epoch_to_clients(self, clients_local_epoch):
         for idx, e in enumerate(clients_local_epoch):
             dist.send(tesnor=torch.tensor([float(e)]), dst=idx+1)
+        dist.barrier()
 
     def send_local_train_dataset_to_clients(self, train_datasets):
         self.len_local_dataset.append(-1)
