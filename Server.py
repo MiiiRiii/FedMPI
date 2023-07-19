@@ -1,14 +1,10 @@
 import torch.distributed as dist
 import torch
-import yaml
-import numpy as np
-import copy
-import wandb
 
-from utils import *
-from model_utils import TensorBuffer
-from model_utils import init_weight
-from data_utils import create_dataset
+from utils.utils import *
+from utils.model_utils import TensorBuffer
+from utils.model_utils import init_weight
+from utils.data_utils import create_dataset
 
 from model_controller import CNN_Cifar10
 from model_controller import CNN_Mnist
@@ -58,15 +54,6 @@ class Server(object):
         
         printLog(f"PS >> 클라이언트들에게 데이터셋을 분할합니다.")
         self.send_local_train_dataset_to_clients(train_datasets)
-
-        printLog(f"PS >> 클라이언트들에게 local epoch 수를 지정합니다.")
-        clients_local_epoch=set_num_local_epoch_by_random(self.num_clients, 5, 15)
-        self.send_num_local_epoch_to_clients(clients_local_epoch)
-
-    def send_num_local_epoch_to_clients(self, clients_local_epoch):
-        for idx, e in enumerate(clients_local_epoch):
-            dist.send(tensor=torch.tensor([float(e)]), dst=idx+1)
-        dist.barrier()
 
     def send_local_train_dataset_to_clients(self, train_datasets):
         self.len_local_dataset.append(-1)
@@ -150,46 +137,3 @@ class Server(object):
 
         self.model.load_state_dict(averaged_weights)
     
-        
-    def start(self):
-        clients_idx = [idx for idx in range(1,self.num_clients+1)]
-        #selected_client=[0 for idx in range(1,self.num_clients+1)]
-        while True:
-            
-            selected_client_idx = client_random_select(clients_idx, int(self.selection_ratio*self.num_clients))
-            #for idx in selected_client_idx:
-                #selected_client[idx-1]=1
-            #if(sum(selected_client)==self.num_clients):
-                #self.current_round=self.target_rounds-1
-            printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
-            dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=self.FLgroup)
-
-            printLog(f"PS >> 선택된 클라이언트들에게 글로벌 모델을 보냅니다.")
-            self.send_global_model_to_selected_clients(selected_client_idx)
-            
-            printLog(f"PS >> 선택된 클라이언트들의 로컬 모델을 기다립니다.")
-            self.receive_local_model_from_selected_clients(selected_client_idx)
-            printLog(f"PS >> 선택된 클라이언트들의 로컬 모델을 모두 받았습니다.")
-
-            self.average_aggregation(selected_client_idx)
-            acc, loss = self.evaluate()
-            self.current_round+=1
-            printLog(f"PS >> {self.current_round}번째 글로벌 모델 test_accuracy: {round(acc*100,4)}%, test_loss: {round(loss,4)}")
-
-            if self.wandb_on=="True":
-                wandb.log({"test_accuracy": round(acc*100,4), "test_loss":round(loss,4)})
-
-            dist.barrier()
-            
-            if acc>=self.target_accuracy:
-                dist.broadcast(tensor=torch.tensor([0.]), src=0, group=self.FLgroup)
-                printLog(f"PS >> 목표한 정확도에 도달했으며, 수행한 라운드 수는 {self.current_round}회 입니다.")
-                break
-            elif self.current_round == self.target_rounds:
-                dist.broadcast(tensor=torch.tensor([0.]), src=0, group=self.FLgroup)
-                printLog(f"PS >> 목표한 라운드 수에 도달했으며, 최종 정확도는 {round(acc*100,4)}% 입니다.")
-                break
-            else:
-                printLog(f"PS >> 다음 라운드를 수행합니다.")
-                dist.broadcast(tensor=torch.tensor([1.]), src=0, group=self.FLgroup)
-               

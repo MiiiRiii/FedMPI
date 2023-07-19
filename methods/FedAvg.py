@@ -9,6 +9,18 @@ class FedAvg(object):
     def __init__(self):
         None
 
+    def calculate_coefficient(self, selected_client_idx, Server):
+
+        coefficient={}
+        sum=0
+        for idx in selected_client_idx:
+            coefficient[idx]=Server.len_local_dataset[idx]
+            sum+=Server.len_local_dataset[idx]
+        
+        for idx in selected_client_idx:
+            coefficient[idx]=coefficient[idx]/sum
+
+        return coefficient
     def runClient(self, Client):
         while True:
             selected=False
@@ -45,17 +57,7 @@ class FedAvg(object):
             
             Server.receive_local_model_from_selected_clients(selected_client_idx)
 
-
-            coefficient={}
-            sum=0
-            for idx in selected_client_idx:
-                coefficient[idx]=Server.len_local_dataset[idx]
-                sum+=Server.len_local_dataset[idx]
-            
-            for idx in selected_client_idx:
-                coefficient[idx]=coefficient[idx]/sum
-
-            print(coefficient)
+            coefficient=self.calculate_coefficient(selected_client_idx, Server)
 
             Server.average_aggregation(selected_client_idx, coefficient)
 

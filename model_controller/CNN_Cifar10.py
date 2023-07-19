@@ -1,9 +1,4 @@
 import torch
-import torchvision
-
-from data_utils import CustomTensorDataset
-from data_utils import split_dataset_uniform
-from data_utils import split_dataset_gaussian
 
 
 class Model(torch.nn.Module):

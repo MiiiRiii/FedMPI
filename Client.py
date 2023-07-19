@@ -7,11 +7,11 @@ from torch.optim import SGD
 from torch.nn import CrossEntropyLoss
 
 
-from utils import printLog
-from data_utils import applyCustomDataset
+from utils.utils import printLog
+from utils.data_utils import applyCustomDataset
 from model_controller import CNN_Cifar10
 from model_controller import CNN_Mnist
-from model_utils import TensorBuffer
+from utils.model_utils import TensorBuffer
 
 
 class Client(object):
@@ -100,32 +100,3 @@ class Client(object):
     def send_local_model_to_server(self):
         flatten_model=TensorBuffer(list(self.model.state_dict().values()))
         dist.send(tensor=flatten_model.buffer, dst=0)
-
-    
-    def start(self):
-        
-        while True:
-            selected=False
-            selected_clients=torch.zeros(self.num_selected_clients).type(torch.int64)
-            dist.broadcast(tensor=selected_clients, src=0, group=self.FLgroup)
-            
-            for idx in selected_clients:
-                if idx == self.id:
-                    selected=True
-                    break
-
-            if(selected):
-                self.receive_global_model_from_server()
-                self.train()
-                printLog(f"CLIENT {self.id} >> 평균 학습 소요 시간: {self.total_train_time/self.num_of_selected}")
-                self.send_local_model_to_server()
-
-            dist.barrier()
-
-            continueFL = torch.zeros(1)
-            dist.broadcast(tensor=continueFL, src=0, group=self.FLgroup)
-            if(continueFL[0]==0): #FL 종료
-                printLog(f"CLIENT {self.id} >> total train time = {self.total_train_time}, num of selected = {self.num_of_selected}")
-                dist.gather(torch.tensor([self.total_train_time/self.num_of_selected]),gather_list=[], dst=0, group=self.FLgroup )
-                break
-            

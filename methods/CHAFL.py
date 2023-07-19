@@ -7,6 +7,39 @@ import wandb
 class CHAFL(object):
     def __init__(self):
         None
+
+    def send_num_local_epoch_to_clients(self, clients_local_epoch):
+        for idx, e in enumerate(clients_local_epoch):
+            dist.send(tensor=torch.tensor([float(e)]), dst=idx+1)
+        dist.barrier()
+
+    def calculate_coefficient(self, selected_client_idx, Server):
+        selected_client_squared_local_epoch={}
+        tensor=torch.zeros(1)
+        sum_squared_local_epoch=0
+        for idx in selected_client_idx:
+            dist.recv(tensor=tensor, src=idx)
+            selected_client_squared_local_epoch[idx]=(tensor.item())**2
+            sum_squared_local_epoch+=tensor.item()
+
+        local_epoch_coefficient={}
+        for idx in selected_client_idx:
+            local_epoch_coefficient[idx]=(1-(selected_client_squared_local_epoch[idx]/sum_squared_local_epoch))/(int(Server.selection_ratio * Server.num_clients)-1)
+
+        data_coefficient={}
+        sum_local_data=0
+        for idx in selected_client_idx:
+            data_coefficient[idx]=Server.len_local_dataset[idx]
+            sum_local_data+=Server.len_local_dataset[idx]
+        for idx in selected_client_idx:
+            data_coefficient[idx]/=sum_local_data
+        
+        coefficient={}
+        for idx in selected_client_idx:
+            coefficient[idx]=(local_epoch_coefficient[idx]+data_coefficient[idx])/2
+
+        return coefficient
+
     def runClient(self, Client):
         while True:
             Client.receive_global_model_from_server()
@@ -38,6 +71,10 @@ class CHAFL(object):
                 break
     
     def runServer(self, Server):
+        printLog(f"PS >> 클라이언트들의 local epoch 수를 지정합니다.")
+        clients_local_epoch=set_num_local_epoch_by_random(Server.num_clients, 5, 15)
+        self.send_num_local_epoch_to_clients(clients_local_epoch)
+
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
         global_acc, global_loss = Server.evaluate()
         while True:
@@ -48,29 +85,7 @@ class CHAFL(object):
 
             Server.receive_local_model_from_selected_clients(selected_client_idx)
 
-            selected_client_squared_local_epoch={}
-            tensor=torch.zeros(1)
-            sum_squared_local_epoch=0
-            for idx in selected_client_idx:
-                dist.recv(tensor=tensor, src=idx)
-                selected_client_squared_local_epoch[idx]=(tensor.item())**2
-                sum_squared_local_epoch+=tensor.item()
-
-            local_epoch_coefficient={}
-            for idx in selected_client_idx:
-                local_epoch_coefficient[idx]=(1-(selected_client_squared_local_epoch[idx]/sum_squared_local_epoch))/(int(Server.selection_ratio * Server.num_clients)-1)
-
-            data_coefficient={}
-            sum_local_data=0
-            for idx in selected_client_idx:
-                data_coefficient[idx]=Server.len_local_dataset[idx]
-                sum_local_data+=Server.len_local_dataset[idx]
-            for idx in selected_client_idx:
-                data_coefficient[idx]/=sum_local_data
-            
-            coefficient={}
-            for idx in selected_client_idx:
-                coefficient[idx]=(local_epoch_coefficient[idx]+data_coefficient[idx])/2
+            coefficient = self.calculate_coefficient(selected_client_idx, Server)
 
             Server.average_aggregation(selected_client_idx, coefficient)
             global_acc, global_loss = Server.evaluate()
