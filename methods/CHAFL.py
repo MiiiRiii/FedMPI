@@ -8,11 +8,6 @@ class CHAFL(object):
     def __init__(self):
         None
 
-    def send_num_local_epoch_to_clients(self, clients_local_epoch):
-        for idx, e in enumerate(clients_local_epoch):
-            dist.send(tensor=torch.tensor([float(e)]), dst=idx+1)
-        dist.barrier()
-
     def calculate_coefficient(self, selected_client_idx, Server):
         selected_client_squared_local_epoch={}
         tensor=torch.zeros(1)
@@ -41,6 +36,8 @@ class CHAFL(object):
         return coefficient
 
     def runClient(self, Client):
+
+        Client.receive_num_local_epoch_from_server()
         while True:
             Client.receive_global_model_from_server()
             local_loss = Client.evaluate()
@@ -71,10 +68,7 @@ class CHAFL(object):
                 break
     
     def runServer(self, Server):
-        printLog(f"PS >> 클라이언트들의 local epoch 수를 지정합니다.")
-        clients_local_epoch=set_num_local_epoch_by_random(Server.num_clients, 5, 15)
-        self.send_num_local_epoch_to_clients(clients_local_epoch)
-
+        Server.send_num_local_epoch_to_clients()
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
         global_acc, global_loss = Server.evaluate()
         while True:

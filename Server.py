@@ -51,11 +51,11 @@ class Server(object):
         train_datasets, self.test_data = create_dataset(self.num_clients, dataset, iid, split)
 
         dist.barrier()
-        
-        printLog(f"PS >> 클라이언트들에게 데이터셋을 분할합니다.")
+
         self.send_local_train_dataset_to_clients(train_datasets)
 
     def send_local_train_dataset_to_clients(self, train_datasets):
+        printLog(f"PS >> 클라이언트들에게 데이터셋을 분할합니다.")
         self.len_local_dataset.append(-1)
         for idx, dataset in enumerate(train_datasets):
             if idx==self.num_clients:
@@ -70,8 +70,15 @@ class Server(object):
                 dist.send(tensor=tensor.contiguous(), dst=idx+1)
 
         dist.barrier()
+
+    def send_num_local_epoch_to_clients(self):
+        printLog(f"PS >> 클라이언트들의 local epoch 수를 지정합니다.")
+        clients_local_epoch=set_num_local_epoch_by_random(self.num_clients, 5, 15)
+        for idx, e in enumerate(clients_local_epoch):
+            dist.send(tensor=torch.tensor([float(e)]), dst=idx+1)
+        dist.barrier()
         
-    def send_global_model_to_selected_clients(self, selected_client_idx):
+    def send_global_model_to_clients(self, selected_client_idx):
         flatten_model = TensorBuffer(list(self.model.state_dict().values()))
         for idx in selected_client_idx:
             dist.send(tensor=flatten_model.buffer, dst=idx)
@@ -108,20 +115,10 @@ class Server(object):
 
         return test_accuracy, test_loss
 
-    def average_aggregation(self, selected_client_idx):
+    def average_aggregation(self, selected_client_idx, coefficient):
 
         printLog("PS >> global aggregation을 진행합니다.")
         averaged_weights = OrderedDict()
-        coefficient={}
-        sum=0
-        for idx in selected_client_idx:
-            coefficient[idx]=self.len_local_dataset[idx]
-            sum+=self.len_local_dataset[idx]
-        
-        for idx in selected_client_idx:
-            coefficient[idx]=coefficient[idx]/sum
-
-        print(coefficient)
         
         for idx, client_idx in enumerate(selected_client_idx):
             model = self.model_controller.Model()
@@ -136,4 +133,3 @@ class Server(object):
                     averaged_weights[key] += coefficient[client_idx] * local_weights[key]
 
         self.model.load_state_dict(averaged_weights)
-    

@@ -21,6 +21,7 @@ class FedAvg(object):
             coefficient[idx]=coefficient[idx]/sum
 
         return coefficient
+    
     def runClient(self, Client):
         while True:
             selected=False

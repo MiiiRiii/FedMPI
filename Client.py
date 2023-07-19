@@ -41,9 +41,6 @@ class Client(object):
         # receive train dataset 
         self.receive_local_train_dataset_from_server()
 
-        # receive local epoch 
-        self.receive_num_local_epoch_from_server()
-
     def receive_num_local_epoch_from_server(self):
         tensor = torch.zeros(1)
         dist.recv(tensor=tensor, src=0)
@@ -89,6 +86,8 @@ class Client(object):
             printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
         
         self.total_train_time += time.time()-start
+
+        return self.local_epoch
     
     def receive_global_model_from_server(self):
         model_state_dict = self.model.state_dict()
