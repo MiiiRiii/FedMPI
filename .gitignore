@@ -1,5 +1,7 @@
 /data
 /wandb
 /model_controller/__pycache__
+/methods/__pycache__
+/utils/__pycache__
 /__pycache__
 *.pyc
