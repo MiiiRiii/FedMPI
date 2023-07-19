@@ -1,82 +1,68 @@
-from Server import Server
-from Client import Client
-from utils import printLog
+from utils import *
 
 import torch.distributed as dist
-import torch.multiprocessing as mp
-import os
-import socket
-import wandb
-import argparse
 import torch
-import numpy as np
-import pandas as pd
+import wandb
 
-MASTER_ADDR = os.environ['MASTER_ADDR']
-MASTER_PORT = os.environ['MASTER_PORT']
-WORLD_SIZE = int(os.environ['WORLD_SIZE'])
-WORLD_RANK = int(os.environ['RANK'])
-def init_FL(FLgroup, args): 
-    log=[]
-    avg_train_time=[torch.empty(1) for i in range(WORLD_SIZE)]
-    for itr in range(10): 
-        if WORLD_RANK == 0:
-            if args.wandb_on == "True":
-                wandb.init(project=args.project, entity=args.entity, group=args.group, name=args.name,
-                        config={
-                    "num_clients": WORLD_SIZE-1,
-                    "batch_size": args.batch_size,
-                    "local_epoch": args.local_epochs,
-                    "learning_rate": args.lr,
-                    "dataset": args.dataset,
-                    "data_split": args.split,
-                })
-            printLog(f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
-            ps=Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
-            ps.setup(args.dataset, args.iid, args.split)
-            ps.start()
-            dist.gather(torch.tensor([1.0]), gather_list=avg_train_time, dst=0, group=FLgroup)
-            printLog(avg_train_time)
+class FedAvg(object):
+    def client(self, Client):
+        while True:
+            selected=False
+            selected_clients=torch.zeros(Client.num_selected_clients).type(torch.int64)
+            dist.broadcast(tensor=selected_clients, src=0, group=Client.FLgroup)
+            
+            for idx in selected_clients:
+                if idx == Client.id:
+                    selected=True
+                    break
 
-            if args.wandb_on == True:
-                wandb.finish()
-        else:
-            torch.set_num_threads(args.omp_num_threads)
-            printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
-            client = Client(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
-            client.setup()
-            client.start()
+            if(selected):
+                Client.receive_global_model_from_server()
+                Client.train()
+                printLog(f"CLIENT {Client.id} >> 평균 학습 소요 시간: {Client.total_train_time/Client.num_of_selected}")
+                Client.send_local_model_to_server()
 
-        avg_train_time_np = np.array([tensor.item() for tensor in avg_train_time])
-        log.append(avg_train_time_np)
+            dist.barrier()
 
-    df = pd.DataFrame(log)
-    df.to_csv(f"./thread{args.omp_num_threads}.csv")
-        
-def init_process(args, backend='gloo'):
-    FLgroup = dist.init_process_group(backend, rank=WORLD_RANK, world_size=WORLD_SIZE, init_method=f'tcp://{MASTER_ADDR}:{MASTER_PORT}')
-    init_FL(FLgroup, args)
+            continueFL = torch.zeros(1)
+            dist.broadcast(tensor=continueFL, src=0, group=Client.FLgroup)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--selection_ratio", type=float)
-    parser.add_argument("--round", type=int)
-    parser.add_argument("--batch_size", type=int)
-    parser.add_argument("--local_epochs", type=int)
-    parser.add_argument("--lr",type=float)
-    parser.add_argument("--target_acc", type=float)
-    parser.add_argument("--omp_num_threads", type=int)
+            if(continueFL[0]==0): #FL 종료
+                break
 
-    parser.add_argument("--dataset", type=str)
-    parser.add_argument("--iid", type=str)
-    parser.add_argument("--split", type=str)
+    def server(self, Server):
+        clients_idx = [idx for idx in range(1, Server.num_clients+1)]
+        while True:
+            selected_client_idx = client_random_select(clients_idx, int(Server.selection_ratio * Server.num_clients))
+            printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
+            dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=Server.FLgroup)
 
-    parser.add_argument("--wandb_on", type=str)
-    parser.add_argument("--project",type=str)
-    parser.add_argument("--entity",type=str)
-    parser.add_argument("--group",type=str)
-    parser.add_argument("--name",type=str)
-    
-    args=parser.parse_args()
-    init_process(args)
-    
+            printLog(f"PS >> 선택된 클라이언트들에게 글로벌 모델을 보냅니다.")
+            Server.send_global_model_to_selected_clients(selected_client_idx)
+            
+            printLog(f"PS >> 선택된 클라이언트들의 로컬 모델을 기다립니다.")
+            Server.receive_local_model_from_selected_clients(selected_client_idx)
+            printLog(f"PS >> 선택된 클라이언트들의 로컬 모델을 모두 받았습니다.")
+
+            Server.average_aggregation(selected_client_idx)
+            acc, loss = Server.evaluate()
+            Server.current_round+=1
+            printLog(f"PS >> {Server.current_round}번째 글로벌 모델 test_accuracy: {round(acc*100,4)}%, test_loss: {round(loss,4)}")
+
+            if Server.wandb_on=="True":
+                wandb.log({"test_accuracy": round(acc*100,4), "test_loss":round(loss,4)})
+
+            dist.barrier()
+            
+            if acc>=Server.target_accuracy:
+                dist.broadcast(tensor=torch.tensor([0.]), src=0, group=Server.FLgroup)
+                printLog(f"PS >> 목표한 정확도에 도달했으며, 수행한 라운드 수는 {Server.current_round}회 입니다.")
+                break
+            elif Server.current_round == Server.target_rounds:
+                dist.broadcast(tensor=torch.tensor([0.]), src=0, group=Server.FLgroup)
+                printLog(f"PS >> 목표한 라운드 수에 도달했으며, 최종 정확도는 {round(acc*100,4)}% 입니다.")
+                break
+            else:
+                printLog(f"PS >> 다음 라운드를 수행합니다.")
+                dist.broadcast(tensor=torch.tensor([1.]), src=0, group=Server.FLgroup)
+               

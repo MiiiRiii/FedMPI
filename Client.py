@@ -47,7 +47,7 @@ class Client(object):
     def receive_num_local_epoch_from_server(self):
         tensor = torch.zeros(1)
         dist.recv(tensor=tensor, src=0)
-        self.local_epoch = tensor.item()
+        self.local_epoch = int(tensor.item())
         printLog(f"CLIENT {self.id} >> local epoch 수는 {self.local_epoch}입니다.")
         dist.barrier()
     

@@ -65,7 +65,7 @@ class Server(object):
 
     def send_num_local_epoch_to_clients(self, clients_local_epoch):
         for idx, e in enumerate(clients_local_epoch):
-            dist.send(tesnor=torch.tensor([float(e)]), dst=idx+1)
+            dist.send(tensor=torch.tensor([float(e)]), dst=idx+1)
         dist.barrier()
 
     def send_local_train_dataset_to_clients(self, train_datasets):
@@ -153,14 +153,14 @@ class Server(object):
         
     def start(self):
         clients_idx = [idx for idx in range(1,self.num_clients+1)]
-        selected_client=[0 for idx in range(1,self.num_clients+1)]
+        #selected_client=[0 for idx in range(1,self.num_clients+1)]
         while True:
             
             selected_client_idx = client_random_select(clients_idx, int(self.selection_ratio*self.num_clients))
-            for idx in selected_client_idx:
-                selected_client[idx-1]=1
-            if(sum(selected_client)==self.num_clients):
-                self.current_round=self.target_rounds-1
+            #for idx in selected_client_idx:
+                #selected_client[idx-1]=1
+            #if(sum(selected_client)==self.num_clients):
+                #self.current_round=self.target_rounds-1
             printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=self.FLgroup)
 
