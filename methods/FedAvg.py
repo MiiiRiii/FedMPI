@@ -65,6 +65,9 @@ class FedAvg(object):
             global_acc, global_loss = Server.evaluate()
 
             Server.current_round+=1
+
+            printLog(f"PS >> {Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
+
             if Server.wandb_on=="True":
                 wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4)})
 

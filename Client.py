@@ -89,6 +89,28 @@ class Client(object):
 
         return self.local_epoch
     
+    def evaluate(self):
+        self.model.eval()
+	
+        loss_function = CrossEntropyLoss()
+        dataloader = DataLoader(self.dataset, self.batch_size)
+
+        test_loss, correct = 0, 0
+        with torch.no_grad():
+            for data, labels in dataloader:
+                outputs = self.model(data)
+                test_loss = test_loss + loss_function(outputs, labels).item()
+
+                predicted = outputs.argmax(dim=1, keepdim=True)
+
+                correct = correct + \
+                    predicted.eq(labels.view_as(predicted)).sum().item()
+
+
+        test_loss = test_loss / len(dataloader)
+
+        return test_loss
+    
     def receive_global_model_from_server(self):
         model_state_dict = self.model.state_dict()
         model_tb = TensorBuffer(list(model_state_dict.values()))
