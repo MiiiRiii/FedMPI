@@ -80,6 +80,7 @@ class CHAFL(object):
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=Server.FLgroup)
 
             Server.receive_local_model_from_selected_clients(selected_client_idx)
+            printLog(f"PS >> 선택된 클라이언트들의 로컬 모델을 모두 받았습니다.")
 
             coefficient = self.calculate_coefficient(selected_client_idx, Server)
 
