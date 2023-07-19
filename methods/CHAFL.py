@@ -41,6 +41,7 @@ class CHAFL(object):
         while True:
             Client.receive_global_model_from_server()
             local_loss = Client.evaluate()
+            printLog(f"CLIENT {Client.id} >> local loss는 {round(local_loss,4)}입니다.")
             req = dist.isend(tensor=torch.tensor([local_loss]), dst=0)
             req.wait()
 
@@ -71,6 +72,7 @@ class CHAFL(object):
         Server.send_num_local_epoch_to_clients()
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
         global_acc, global_loss = Server.evaluate()
+        printLog(f"PS >> 초기 글로벌 모델의 loss는 {round(global_loss,4)}입니다.")
         while True:
             Server.send_global_model_to_clients(clients_idx)
             selected_client_idx = client_select_by_loss(Server.num_clients, clients_idx, int(Server.selection_ratio * Server.num_clients), global_loss)
