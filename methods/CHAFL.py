@@ -51,6 +51,7 @@ class CHAFL(object):
             
             for idx in selected_clients:
                 if idx == Client.id:
+                    printLog(f"CLIENT {Client.id} >> 선택됨")
                     selected=True
                     break
 
@@ -59,7 +60,8 @@ class CHAFL(object):
                 printLog(f"CLIENT {Client.id} >> 평균 학습 소요 시간: {Client.total_train_time/Client.num_of_selected}")
                 Client.send_local_model_to_server()
                 dist.send(torch.tensor([float(local_epoch)]), dst=0)
-
+            else:
+                printLog(f"CLIENT {Client.id} >> 선택 안 됨")
             dist.barrier()
 
             continueFL = torch.zeros(1)
@@ -75,10 +77,10 @@ class CHAFL(object):
         printLog(f"PS >> 초기 글로벌 모델의 loss는 {round(global_loss,4)}입니다.")
         while True:
             Server.send_global_model_to_clients(clients_idx)
-            selected_client_idx = client_select_by_loss(Server.num_clients, clients_idx, int(Server.selection_ratio * Server.num_clients), global_loss)
+            selected_client_idx = client_select_by_loss(Server.num_clients, int(Server.selection_ratio * Server.num_clients), global_loss)
             printLog(f"PS >> 학습에 참여하는 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=Server.FLgroup)
-
+            printLog(f"aaaaaa")
             Server.receive_local_model_from_selected_clients(selected_client_idx)
             printLog(f"PS >> 선택된 클라이언트들의 로컬 모델을 모두 받았습니다.")
 

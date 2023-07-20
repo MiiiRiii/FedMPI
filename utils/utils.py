@@ -9,18 +9,19 @@ def client_select_randomly(clients_idx, num_selected_clients):
     random.shuffle(shuffled_clients_idx)
     return shuffled_clients_idx[0:num_selected_clients]
 
-def client_select_by_loss(num_clients, clients_idx, num_selected_clients, global_loss):
+def client_select_by_loss(num_clients, num_selected_clients, global_loss):
     cnt=0
     client_select_checklist=[False for i in range(num_clients+1)]
     selected_clients_list=[]
     local_loss=torch.zeros(1)
     local_loss_list={}
 
-    for idx in clients_idx:
+    for idx in range(num_clients):
         req=dist.irecv(tensor=local_loss)
         if cnt<num_selected_clients :
             req.wait()
-            local_loss_list[idx]=local_loss.item()
+            printLog(f"client {req.source_rank()}의 local loss는 {local_loss.item()}입니다.")
+            local_loss_list[req.source_rank()]=local_loss.item()
             if local_loss.item()>global_loss:
                 selected_clients_list.append(req.source_rank())
                 client_select_checklist[req.source_rank()]=True
