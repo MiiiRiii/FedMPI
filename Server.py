@@ -88,7 +88,6 @@ class Server(object):
         reqs=[]
         for idx in selected_client_idx:
             req=dist.irecv(tensor=self.flatten_client_models[idx].buffer)
-            printLog(f"PS >> CLIENT {req.source_rank()}에게 로컬 모델을 받습니다.")
             reqs.append(req)
         for req in reqs:
             req.wait()

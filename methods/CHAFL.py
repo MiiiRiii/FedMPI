@@ -13,7 +13,7 @@ class CHAFL(object):
         tensor=torch.zeros(1)
         sum_squared_local_epoch=0
         for idx in selected_client_idx:
-            dist.recv(tensor=tensor, src=idx)
+            dist.recv(tensor=tensor, src=idx, tag=1)
             selected_client_squared_local_epoch[idx]=(tensor.item())**2
             sum_squared_local_epoch+=tensor.item()
 
@@ -51,7 +51,6 @@ class CHAFL(object):
             
             for idx in selected_clients:
                 if idx == Client.id:
-                    printLog(f"CLIENT {Client.id} >> 선택됨")
                     selected=True
                     break
 
@@ -59,9 +58,8 @@ class CHAFL(object):
                 local_epoch = Client.train()
                 printLog(f"CLIENT {Client.id} >> 평균 학습 소요 시간: {Client.total_train_time/Client.num_of_selected}")
                 Client.send_local_model_to_server()
-                dist.send(torch.tensor([float(local_epoch)]), dst=0)
-            else:
-                printLog(f"CLIENT {Client.id} >> 선택 안 됨")
+                dist.send(torch.tensor([float(local_epoch)]), dst=0, tag=1)
+
             dist.barrier()
 
             continueFL = torch.zeros(1)
@@ -80,9 +78,8 @@ class CHAFL(object):
             selected_client_idx = client_select_by_loss(Server.num_clients, int(Server.selection_ratio * Server.num_clients), global_loss)
             printLog(f"PS >> 학습에 참여하는 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=Server.FLgroup)
-            printLog(f"aaaaaa")
+            printLog(f"PS >> aaaaa")
             Server.receive_local_model_from_selected_clients(selected_client_idx)
-            printLog(f"PS >> 선택된 클라이언트들의 로컬 모델을 모두 받았습니다.")
 
             coefficient = self.calculate_coefficient(selected_client_idx, Server)
 
