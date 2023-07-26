@@ -41,15 +41,6 @@ def applyCustomDataset(dataset_name,data, label):
 
     return CustomTensorDataset((data, label.long()), transform=transform)
 
-def positive_int_gauss_random(mean, std):
-    """
-    평균은 mean이고, 표준편차는 std인 가우시안 분포를 따르는 랜덤 양수 하나를 생성한다.
-    """
-    sampled_value = -1
-    while sampled_value <= 9:
-        sampled_value = round(random.gauss(mean, std))
-
-    return sampled_value
 
 def create_dataset(num_clients, dataset_name, iid, split):
     num_shards=200
@@ -238,3 +229,13 @@ def get_dataset_index_by_gaussian(len_training_dataset, num_clients, mean, std):
 
     printLog(f"각 client들이 가져갈 data 개수 = {result}")
     return result
+
+def positive_int_gauss_random(mean, std):
+    """
+    평균은 mean이고, 표준편차는 std인 가우시안 분포를 따르는 랜덤 양수 하나를 생성한다.
+    """
+    sampled_value = -1
+    while sampled_value <= 9:
+        sampled_value = round(random.gauss(mean, std))
+
+    return sampled_value

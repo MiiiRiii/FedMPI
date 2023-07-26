@@ -15,6 +15,7 @@ def client_select_by_loss(num_clients, num_selected_clients, global_loss):
     selected_clients_list=[]
     local_loss=torch.zeros(1)
     local_loss_list={}
+    remain_res=[]
 
     for idx in range(num_clients):
         req=dist.irecv(tensor=local_loss)
@@ -26,16 +27,37 @@ def client_select_by_loss(num_clients, num_selected_clients, global_loss):
                 selected_clients_list.append(req.source_rank())
                 client_select_checklist[req.source_rank()]=True
                 cnt=cnt+1
+        else:
+            remain_res.append(req)
 
     if cnt < num_selected_clients :
         sorted_local_loss_list = sorted(local_loss_list.items(), key=lambda item:item[1], reverse=True)
         for idx in range(num_clients):
+            if cnt>=num_selected_clients:
+                break
             if client_select_checklist[sorted_local_loss_list[idx][0]] == False:
                 selected_clients_list.append(sorted_local_loss_list[idx][0])
                 client_select_checklist[sorted_local_loss_list[idx][0]]=True
+                cnt=cnt+1
 
-    return selected_clients_list
-    
+    return selected_clients_list, remain_res
+
+def omp_num_threads_per_clients(num_clients, system_heterogeneity):
+    if system_heterogeneity==1: # omp_num_threads 1~3
+        return get_num_threads_by_gaussian(num_clients, 1, 3, 2, 1)
+    elif system_heterogeneity==2: # omp_num_threads 1~17
+        return get_num_threads_by_gaussian(num_clients, 1, 20, 10, 5)
+
+def get_num_threads_by_gaussian(num_clients, min, max, mean, std):
+    result = []
+    for i in range(num_clients):
+        while True:
+            sample_value=round(random.gauss(mean, std))
+            if sample_value>=min and sample_value<=max:
+                break
+        result.append(sample_value)
+    return result
+
 def printLog(message):
     now = str(datetime.now())
     print("["+now+"] " + message)

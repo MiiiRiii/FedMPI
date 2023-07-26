@@ -14,8 +14,9 @@ class CHAFL(object):
         sum_squared_local_epoch=0
         for idx in selected_client_idx:
             dist.recv(tensor=tensor, src=idx, tag=1)
+            printLog(f"PS >> CLIENT {idx}가 수행한 local epoch은 {tensor.item()}입니다.")
             selected_client_squared_local_epoch[idx]=(tensor.item())**2
-            sum_squared_local_epoch+=tensor.item()
+            sum_squared_local_epoch+=(tensor.item())**2
 
         local_epoch_coefficient={}
         for idx in selected_client_idx:
@@ -31,7 +32,7 @@ class CHAFL(object):
         
         coefficient={}
         for idx in selected_client_idx:
-            coefficient[idx]=(local_epoch_coefficient[idx]+data_coefficient[idx])/2
+            coefficient[idx]=local_epoch_coefficient[idx]*0.7+data_coefficient[idx]*0.3
 
         return coefficient
 
@@ -71,18 +72,23 @@ class CHAFL(object):
     def runServer(self, Server):
         Server.send_num_local_epoch_to_clients()
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
+        random_clients_idx=clients_idx[:]
         global_acc, global_loss = Server.evaluate()
         printLog(f"PS >> 초기 글로벌 모델의 loss는 {round(global_loss,4)}입니다.")
         while True:
-            Server.send_global_model_to_clients(clients_idx)
-            selected_client_idx = client_select_by_loss(Server.num_clients, int(Server.selection_ratio * Server.num_clients), global_loss)
+            random.shuffle(random_clients_idx)
+            Server.send_global_model_to_clients(random_clients_idx)
+            selected_client_idx, remain_reqs = client_select_by_loss(Server.num_clients, int(Server.selection_ratio * Server.num_clients), global_loss)
             printLog(f"PS >> 학습에 참여하는 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=Server.FLgroup)
-            printLog(f"PS >> aaaaa")
+            if len(remain_reqs)>0:
+                for req in remain_reqs:
+                    req.wait()
             Server.receive_local_model_from_selected_clients(selected_client_idx)
 
             coefficient = self.calculate_coefficient(selected_client_idx, Server)
-
+            for idx in selected_client_idx:
+                printLog(f"PS >> CLIENT {idx}의 coefficient는 {coefficient[idx]}입니다.")
             Server.average_aggregation(selected_client_idx, coefficient)
             global_acc, global_loss = Server.evaluate()
             Server.current_round+=1

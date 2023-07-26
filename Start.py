@@ -26,6 +26,7 @@ def init_FL(FLgroup, args):
     elif args.method=="CHAFL":
         method = CHAFL.CHAFL()
 
+
     if WORLD_RANK == 0:
         if args.wandb_on == "True":
             wandb.init(project=args.project, entity=args.entity, group=args.group, name=args.name,
@@ -36,10 +37,12 @@ def init_FL(FLgroup, args):
                 "learning_rate": args.lr,
                 "dataset": args.dataset,
                 "data_split": args.split,
+                "method": args.method,
+                "system_heterogeneity": args.system_heterogeneity
             })
         printLog(f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
         ps=Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
-        ps.setup(args.dataset, args.iid, args.split)
+        ps.setup(args.dataset, args.iid, args.split, args.system_heterogeneity)
         method.runServer(ps)
 
         if args.wandb_on == True:
@@ -64,7 +67,7 @@ if __name__ == "__main__":
     parser.add_argument("--local_epochs", type=int)
     parser.add_argument("--lr",type=float)
     parser.add_argument("--target_acc", type=float)
-    parser.add_argument("--omp_num_threads", type=int)
+    parser.add_argument("--system_heterogeneity", choices=[0,1,2], defult=0, type=str)
 
     parser.add_argument("--dataset", choices=['MNIST', 'CIFAR10'], default='CIFAR10', type=str)
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)

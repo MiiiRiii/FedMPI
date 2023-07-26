@@ -41,6 +41,15 @@ class Client(object):
         # receive train dataset 
         self.receive_local_train_dataset_from_server()
 
+        self.receive_omp_num_threads_from_server()
+    
+    def receive_omp_num_threads_from_server(self):
+        tensor=torch.zeros(1)
+        dist.recv(tensor=tensor, src=0)
+        torch.set_num_threads(int(tensor.item()))
+        printLog(f"CLIENT {self.id} >> thread {int(tensor.item())}개를 사용합니다.")
+        dist.barrier()
+
     def receive_num_local_epoch_from_server(self):
         tensor = torch.zeros(1)
         dist.recv(tensor=tensor, src=0)
