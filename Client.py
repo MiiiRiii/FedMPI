@@ -15,7 +15,8 @@ from utils.model_utils import TensorBuffer
 
 
 class Client(object):
-    def __init__(self, batch_size, local_epoch, lr, dataset, FLgroup):
+    def __init__(self, num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup):
+        self.num_selected_clients=num_selected_clients
         self.id=dist.get_rank()
         self.batch_size = batch_size
         self.local_epoch = local_epoch
