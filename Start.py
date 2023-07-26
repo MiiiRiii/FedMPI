@@ -48,7 +48,7 @@ def init_FL(FLgroup, args):
         if args.wandb_on == True:
             wandb.finish()
     else:
-        torch.set_num_threads(args.omp_num_threads)
+        #torch.set_num_threads(args.omp_num_threads)
         printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
         client = Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
         client.setup()
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     parser.add_argument("--local_epochs", type=int)
     parser.add_argument("--lr",type=float)
     parser.add_argument("--target_acc", type=float)
-    parser.add_argument("--system_heterogeneity", choices=[0,1,2], defult=0, type=str)
+    parser.add_argument("--system_heterogeneity", choices=[0,1,2], default=0, type=int)
 
     parser.add_argument("--dataset", choices=['MNIST', 'CIFAR10'], default='CIFAR10', type=str)
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)

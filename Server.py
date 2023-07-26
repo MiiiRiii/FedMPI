@@ -62,7 +62,7 @@ class Server(object):
             for idx, threads in enumerate(omp_num_threads_lists):
                 dist.send(tensor=torch.tensor([float(threads)]), dst=idx+1)
         elif system_heterogeneity==0:
-            for idx, threads in enumerate(omp_num_threads_lists): # 모두 thread 2개를 사용해서 학습 진행
+            for idx in range(self.num_clients): # 모두 thread 2개를 사용해서 학습 진행
                 dist.send(tensor=torch.tensor([float(2)]), dst=idx+1)
         dist.barrier()
 
