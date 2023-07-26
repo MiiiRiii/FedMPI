@@ -50,7 +50,7 @@ def init_FL(FLgroup, args):
     else:
         #torch.set_num_threads(args.omp_num_threads)
         printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
-        client = Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
+        client = Client(args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
         client.setup()
         method.runClient(client)
 

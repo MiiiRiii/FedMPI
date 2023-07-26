@@ -15,9 +15,8 @@ from utils.model_utils import TensorBuffer
 
 
 class Client(object):
-    def __init__(self, num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup):
+    def __init__(self, batch_size, local_epoch, lr, dataset, FLgroup):
         self.id=dist.get_rank()
-        self.num_selected_clients = num_selected_clients
         self.batch_size = batch_size
         self.local_epoch = local_epoch
         self.lr = lr
@@ -95,7 +94,7 @@ class Client(object):
             printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
         
         self.total_train_time += time.time()-start
-
+        printLog(f"CLIENT {self.id} >> 평균 학습 소요 시간 : {self.total_train_time/self.num_of_selected}초")
         return self.local_epoch
     
     def evaluate(self):

@@ -46,7 +46,7 @@ def omp_num_threads_per_clients(num_clients, system_heterogeneity):
     if system_heterogeneity==1: # omp_num_threads 1~3
         return get_num_threads_by_gaussian(num_clients, 1, 3, 2, 1)
     elif system_heterogeneity==2: # omp_num_threads 1~17
-        return get_num_threads_by_gaussian(num_clients, 1, 20, 10, 5)
+        return get_num_threads_by_gaussian(num_clients, 1, 16, 10, 5)
 
 def get_num_threads_by_gaussian(num_clients, min, max, mean, std):
     result = []
