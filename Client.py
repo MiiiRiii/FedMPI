@@ -73,30 +73,51 @@ class Client(object):
         self.dataset = applyCustomDataset(self.dataset_name, data, label)
 
         dist.barrier()
-        
-        
-    def train(self):
+
+    def doOneLocalEpoch(self, dataloader, optimizer, loss_function):
+        for data, labels in dataloader:
+            optimizer.zero_grad()
+            outputs = self.model.forward(data)
+            loss = loss_function(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+    def train(self, currentRoundGroup=None):
         printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
         self.num_of_selected += 1
-        self.model.train()
-
+        performedLocalEpoch=self.local_epoch
         start=time.time()
+
+        self.model.train()
         optimizer = SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
         loss_function = CrossEntropyLoss()
         dataloader = DataLoader(self.dataset, self.batch_size, shuffle=True)
 
         for e in range(self.local_epoch):
-            for data, labels in dataloader:
-                optimizer.zero_grad()
-                outputs = self.model.forward(data)
-                loss = loss_function(outputs, labels)
-                loss.backward()
-                optimizer.step()
+            self.doOneLocalEpoch(dataloader, optimizer, loss_function)
             printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
+
+        if currentRoundGroup!=None: # If current method is CHAFL
+            # Notify completion minimum quota to server
+            dist.send(tensor=torch.tensor([float(1)]), dst=0)
+
+            # Receive message asynchronously from server
+            req=dist.broadcast(tensor=torch.zeros(1), src=0, async_op=True, group=currentRoundGroup)
+
+            # Do additional local epoch
+            continueLocalUpdate=True
+            
+            while continueLocalUpdate:
+                if req.is_completed():
+                    continueLocalUpdate=False
+                    break
+                self.doOneLocalEpoch(dataloader, optimizer, loss_function)
+                performedLocalEpoch+=1    
+                printLog(f"CLIENT {self.id} >> {performedLocalEpoch} epoch을 수행했습니다.")
+            dist.barrier()    
         
         self.total_train_time += time.time()-start
-        printLog(f"CLIENT {self.id} >> 평균 학습 소요 시간 : {self.total_train_time/self.num_of_selected}초")
-        return self.local_epoch
+        return performedLocalEpoch
     
     def evaluate(self):
         self.model.eval()

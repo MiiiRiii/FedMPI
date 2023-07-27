@@ -44,7 +44,7 @@ def client_select_by_loss(num_clients, num_selected_clients, global_loss):
 
 def omp_num_threads_per_clients(num_clients, system_heterogeneity):
     if system_heterogeneity==1: # omp_num_threads 1~3
-        return get_num_threads_by_gaussian(num_clients, 1, 3, 2, 1)
+        return get_num_threads_by_gaussian(num_clients, 1, 5, 2, 1)
     elif system_heterogeneity==2: # omp_num_threads 1~17
         return get_num_threads_by_gaussian(num_clients, 1, 16, 10, 5)
 
