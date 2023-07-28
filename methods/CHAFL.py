@@ -56,8 +56,10 @@ class CHAFL(object):
                     break
 
             if(selected):
-                currentRoundGroup = dist.new_group(selected_clients.tolist()+[0]) 
-
+                selected_clients_idx=selected_clients.tolist()+[0]
+                printLog(f"CLIENT {Client.id} >> {selected_clients_idx}")
+                currentRoundGroup = dist.new_group(selected_clients_idx) 
+                
                 # Do minimal quota
                 real_local_epoch = Client.train(currentRoundGroup)
                 printLog(f"CLIENT {Client.id} >> 평균 학습 소요 시간: {Client.total_train_time/Client.num_of_selected}")
