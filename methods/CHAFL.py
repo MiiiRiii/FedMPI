@@ -90,8 +90,7 @@ class CHAFL(object):
             if len(remain_reqs)>0:
                 for req in remain_reqs:
                     req.wait()
-            
-            currentRoundGroup = dist.new_group(selected_client_idx+[0])            
+            currentRoundGroup = dist.new_group(selected_client_idx+[0], backend="gloo")            
             Server.wait_local_update_of_selected_clients(currentRoundGroup, selected_client_idx)
 
             Server.receive_local_model_from_selected_clients(selected_client_idx)
