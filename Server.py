@@ -107,7 +107,6 @@ class Server(object):
             printLog(f"Server >> CLIENT {req.source_rank()}가 최소 할당량을 완료함")
         
         dist.broadcast(tensor=torch.tensor(float(1)), src=0, async_op=True, group=currentRoundGroup)
-        dist.barrier()
 
     def receive_local_model_from_selected_clients(self, selected_client_idx):
         reqs=[]
