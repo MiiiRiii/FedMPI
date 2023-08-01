@@ -55,11 +55,10 @@ class CHAFL(object):
                     selected=True
                     break
 
+            current_round_group=selected_clients.tolist()+[0]
+            currentRoundGroup = dist.new_group(current_round_group)
             if(selected):
-                selected_clients_idx=selected_clients.tolist()+[0]
-                printLog(f"CLIENT {Client.id} >> {selected_clients_idx}")
-                currentRoundGroup = dist.new_group(selected_clients_idx) 
-                
+                                               
                 # Do minimal quota
                 real_local_epoch = Client.train(currentRoundGroup)
                 printLog(f"CLIENT {Client.id} >> 평균 학습 소요 시간: {Client.total_train_time/Client.num_of_selected}")
@@ -85,14 +84,14 @@ class CHAFL(object):
         while True:
             random.shuffle(random_clients_idx)
             Server.send_global_model_to_clients(random_clients_idx)
-            
             selected_client_idx, remain_reqs = client_select_by_loss(Server.num_clients, int(Server.selection_ratio * Server.num_clients), global_loss)
             printLog(f"PS >> 학습에 참여하는 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=Server.FLgroup)
             if len(remain_reqs)>0:
                 for req in remain_reqs:
                     req.wait()
-            currentRoundGroup = dist.new_group(selected_client_idx+[0], backend="gloo")            
+            current_round_group = selected_client_idx+[0]
+            currentRoundGroup = dist.new_group(current_round_group, backend="gloo")            
             Server.wait_local_update_of_selected_clients(currentRoundGroup, selected_client_idx)
 
             Server.receive_local_model_from_selected_clients(selected_client_idx)
