@@ -108,6 +108,7 @@ class Server(object):
         
         dist.broadcast(tensor=torch.tensor(float(1)), src=0, async_op=True, group=currentRoundGroup)
 
+
     def receive_local_model_from_selected_clients(self, selected_client_idx):
         reqs=[]
         for idx in selected_client_idx:

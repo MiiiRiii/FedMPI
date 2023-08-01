@@ -113,8 +113,7 @@ class Client(object):
                     break
                 self.doOneLocalEpoch(dataloader, optimizer, loss_function)
                 performedLocalEpoch+=1    
-                printLog(f"CLIENT {self.id} >> {performedLocalEpoch} epoch을 수행했습니다.")
-            dist.barrier()    
+                printLog(f"CLIENT {self.id} >> {performedLocalEpoch} epoch을 수행했습니다.")  
         
         self.total_train_time += time.time()-start
         return performedLocalEpoch
