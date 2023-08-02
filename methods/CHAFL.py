@@ -66,6 +66,7 @@ class CHAFL(object):
                 # Send local model to server
                 Client.send_local_model_to_server()
                 dist.send(torch.tensor([float(real_local_epoch)]), dst=0, tag=1)
+                dist.destroy_process_group(currentRoundGroup)
 
             dist.barrier()
 
@@ -84,24 +85,28 @@ class CHAFL(object):
         while True:
             random.shuffle(random_clients_idx)
             Server.send_global_model_to_clients(random_clients_idx)
+
             selected_client_idx, remain_reqs = client_select_by_loss(Server.num_clients, int(Server.selection_ratio * Server.num_clients), global_loss)
             printLog(f"PS >> 학습에 참여하는 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=Server.FLgroup)
             if len(remain_reqs)>0:
                 for req in remain_reqs:
                     req.wait()
+
             current_round_group = selected_client_idx+[0]
             currentRoundGroup = dist.new_group(current_round_group, backend="gloo")            
             Server.wait_local_update_of_selected_clients(currentRoundGroup, selected_client_idx)
-
             Server.receive_local_model_from_selected_clients(selected_client_idx)
+            dist.destroy_process_group(currentRoundGroup)
 
             coefficient = self.calculate_coefficient(selected_client_idx, Server)
             for idx in selected_client_idx:
                 printLog(f"PS >> CLIENT {idx}의 coefficient는 {coefficient[idx]}입니다.")
+
             Server.average_aggregation(selected_client_idx, coefficient)
             global_acc, global_loss = Server.evaluate()
             Server.current_round+=1
+            
             printLog(f"PS >> {Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
 
             if Server.wandb_on=="True":
