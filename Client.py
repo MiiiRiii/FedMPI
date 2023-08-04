@@ -85,14 +85,18 @@ class Client(object):
     def train(self, currentRoundGroup=None):
         printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
         self.num_of_selected += 1
+        if currentRoundGroup==None: 
+            self.local_epoch=self.local_epoch-1
         performedLocalEpoch=self.local_epoch
+
         start=time.time()
 
         self.model.train()
         optimizer = SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
         loss_function = CrossEntropyLoss()
         dataloader = DataLoader(self.dataset, self.batch_size, shuffle=True)
-
+        
+        
         for e in range(self.local_epoch):
             self.doOneLocalEpoch(dataloader, optimizer, loss_function)
             printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
