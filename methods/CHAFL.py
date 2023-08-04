@@ -35,7 +35,7 @@ class CHAFL(object):
         for idx in selected_client_idx:
             coefficient[idx]=local_epoch_coefficient[idx]*0.7+data_coefficient[idx]*0.3
 
-        return coefficient
+        return local_epoch_coefficient
 
 
     def runClient(self, Client):

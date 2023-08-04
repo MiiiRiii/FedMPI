@@ -85,7 +85,7 @@ class Client(object):
     def train(self, currentRoundGroup=None):
         printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
         self.num_of_selected += 1
-        if currentRoundGroup==None: 
+        if currentRoundGroup!=None: 
             self.local_epoch=self.local_epoch-1
         performedLocalEpoch=self.local_epoch
 
