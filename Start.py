@@ -10,7 +10,7 @@ import os
 import socket
 import wandb
 import argparse
-import torch
+import time
 
 
 MASTER_ADDR = os.environ['MASTER_ADDR']
@@ -43,8 +43,8 @@ def init_FL(FLgroup, args):
         printLog(f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
         ps=Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
         ps.setup(args.dataset, args.iid, args.split, args.system_heterogeneity)
-        method.runServer(ps)
 
+        method.runServer(ps)
         if args.wandb_on == True:
             wandb.finish()
     else:

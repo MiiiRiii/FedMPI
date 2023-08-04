@@ -3,6 +3,7 @@ from utils.utils import *
 import torch.distributed as dist
 import torch
 import wandb
+import time
 
 class CHAFL(object):
     def __init__(self):
@@ -34,7 +35,7 @@ class CHAFL(object):
         for idx in selected_client_idx:
             coefficient[idx]=local_epoch_coefficient[idx]*0.7+data_coefficient[idx]*0.3
 
-        return local_epoch_coefficient
+        return coefficient
 
 
     def runClient(self, Client):
@@ -83,6 +84,7 @@ class CHAFL(object):
         printLog(f"PS >> 초기 글로벌 모델의 loss는 {round(global_loss,4)}입니다.")
         
         while True:
+            start=time.time()
             random.shuffle(random_clients_idx)
             Server.send_global_model_to_clients(random_clients_idx)
 
@@ -106,11 +108,11 @@ class CHAFL(object):
             Server.average_aggregation(selected_client_idx, coefficient)
             global_acc, global_loss = Server.evaluate()
             Server.current_round+=1
-            
+
             printLog(f"PS >> {Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
 
             if Server.wandb_on=="True":
-                wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4)})
+                wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-start})
 
             dist.barrier()
             
