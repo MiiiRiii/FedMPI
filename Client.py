@@ -86,8 +86,9 @@ class Client(object):
         printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
         self.num_of_selected += 1
         if currentRoundGroup!=None: 
-            self.local_epoch=self.local_epoch-1
-        performedLocalEpoch=self.local_epoch
+            performedLocalEpoch=self.local_epoch-1
+        else:
+            performedLocalEpoch=self.local_epoch
 
         start=time.time()
 
@@ -97,7 +98,7 @@ class Client(object):
         dataloader = DataLoader(self.dataset, self.batch_size, shuffle=True)
         
         
-        for e in range(self.local_epoch):
+        for e in range(performedLocalEpoch):
             self.doOneLocalEpoch(dataloader, optimizer, loss_function)
             printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
 
