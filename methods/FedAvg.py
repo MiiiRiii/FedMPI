@@ -23,6 +23,11 @@ class FedAvg(object):
 
         return coefficient
     
+    def client_select_randomly(self, clients_idx, num_selected_clients):
+        shuffled_clients_idx = clients_idx[:]
+        random.shuffle(shuffled_clients_idx)
+        return shuffled_clients_idx[0:num_selected_clients]
+    
     def runClient(self, Client):
         while True:
             selected=False
@@ -52,7 +57,7 @@ class FedAvg(object):
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
         while True:
             start=time.time()
-            selected_client_idx = client_select_randomly(clients_idx, int(Server.selection_ratio * Server.num_clients))
+            selected_client_idx = self.client_select_randomly(clients_idx, int(Server.selection_ratio * Server.num_clients))
             printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=Server.FLgroup)
 

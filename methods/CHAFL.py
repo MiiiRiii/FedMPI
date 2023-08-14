@@ -8,6 +8,38 @@ import time
 class CHAFL(object):
     def __init__(self):
         None
+    def client_select_by_loss(self, num_clients, num_selected_clients, global_loss):
+        cnt=0
+        client_select_checklist=[False for i in range(num_clients+1)]
+        selected_clients_list=[]
+        local_loss=torch.zeros(1)
+        local_loss_list={}
+        remain_res=[]
+
+        for idx in range(num_clients):
+            req=dist.irecv(tensor=local_loss)
+            if cnt<num_selected_clients :
+                req.wait()
+                printLog(f"client {req.source_rank()}의 local loss는 {local_loss.item()}입니다.")
+                local_loss_list[req.source_rank()]=local_loss.item()
+                if local_loss.item()>global_loss:
+                    selected_clients_list.append(req.source_rank())
+                    client_select_checklist[req.source_rank()]=True
+                    cnt=cnt+1
+            else:
+                remain_res.append(req)
+
+        if cnt < num_selected_clients :
+            sorted_local_loss_list = sorted(local_loss_list.items(), key=lambda item:item[1], reverse=True)
+            for idx in range(num_clients):
+                if cnt>=num_selected_clients:
+                    break
+                if client_select_checklist[sorted_local_loss_list[idx][0]] == False:
+                    selected_clients_list.append(sorted_local_loss_list[idx][0])
+                    client_select_checklist[sorted_local_loss_list[idx][0]]=True
+                    cnt=cnt+1
+
+        return selected_clients_list, remain_res
 
     def calculate_coefficient(self, selected_client_idx, Server):
         selected_client_squared_local_epoch={}
@@ -88,7 +120,7 @@ class CHAFL(object):
             random.shuffle(random_clients_idx)
             Server.send_global_model_to_clients(random_clients_idx)
 
-            selected_client_idx, remain_reqs = client_select_by_loss(Server.num_clients, int(Server.selection_ratio * Server.num_clients), global_loss)
+            selected_client_idx, remain_reqs = self.client_select_by_loss(Server.num_clients, int(Server.selection_ratio * Server.num_clients), global_loss)
             printLog(f"PS >> 학습에 참여하는 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=Server.FLgroup)
             if len(remain_reqs)>0:

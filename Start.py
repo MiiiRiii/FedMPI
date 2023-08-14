@@ -1,8 +1,10 @@
 from Server import Server
 from Client import Client
 from utils.utils import printLog
+
 from methods import FedAvg
 from methods import CHAFL
+from methods import rpow_d
 
 import torch.distributed as dist
 import torch.multiprocessing as mp
@@ -25,6 +27,8 @@ def init_FL(FLgroup, args):
         method = FedAvg.FedAvg()
     elif args.method=="CHAFL":
         method = CHAFL.CHAFL()
+    elif args.method=="rpow_d":
+        method=rpow_d.rpow_d(args.rpow_d)
 
 
     if WORLD_RANK == 0:
@@ -73,7 +77,8 @@ if __name__ == "__main__":
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--split", choices=['uniform', 'gaussian'], default='gaussian', type=str)
 
-    parser.add_argument("--method", choices=['FedAvg', 'CHAFL'], default='FedAvg', type=str)
+    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','rpow_d'], default='FedAvg', type=str)
+    parser.add_argument("--rpow_d", type=int)
     
     parser.add_argument("--wandb_on", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--project",type=str)
