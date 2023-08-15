@@ -41,12 +41,44 @@ def applyCustomDataset(dataset_name,data, label):
 
     return CustomTensorDataset((data, label.long()), transform=transform)
 
+def get_local_datasets_labels_probabilities(datasets):
+    len=0
+    labels=[]
+    labels_info={0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0}
+    for data in datasets:
+        labels_info[data[1].item()]+=1
+        labels.append(data[1].item())
+        len+=1
+    label_set = set(labels)
+    probabilities = [labels_info[element]/len for element in label_set]
+    return label_set, probabilities
+
+def get_uniform_mini_batch(dataset_name, local_datasets, uniform_random_labels, b=32):
+    shuffled_indices = torch.randperm(len(local_datasets))
+    shuffled_local_datasets = [local_datasets[idx] for idx in shuffled_indices]
+    mini_batch_data = []
+    mini_batch_label = []
+    check_selected = [False for i in range(b)]
+    cnt=0
+    for data in shuffled_local_datasets:
+       for l in range(b):
+           if data[1].item() == uniform_random_labels[l] and check_selected[l]==False:
+               check_selected[l]=True
+               cnt+=1
+               mini_batch_data.append(data[0])
+               mini_batch_label.append(data[1])
+               break
+    uniform_mini_batch = applyCustomDataset(dataset_name, torch.cat(mini_batch_data,0), torch.tensor(mini_batch_label))
+    return uniform_mini_batch
+
+def create_uniform_labels(unique_labels, probabilities, b):
+    uniform_random_labels = random.choices(unique_labels, probabilities, k=b)
+    return uniform_random_labels
 
 def create_dataset(num_clients, dataset_name, iid, split):
     num_shards=200
     data_path="./data/"
     iid = (iid=="True")
-    
     if dataset_name in ["CIFAR10"] :
             transform = torchvision.transforms.Compose(
                 [
@@ -93,7 +125,7 @@ def create_dataset(num_clients, dataset_name, iid, split):
         split_datasets = list(  # training data와 label을 묶어서 list로 만듦
             zip(
                 torch.split(torch.Tensor(training_inputs), split_size),
-                torch.split(torch.Tensor(training_labels), split_size)
+                torch.split(torch.Tensor(training_labels.long()), split_size)
             )
         )
         # finalize bunches of local datasets

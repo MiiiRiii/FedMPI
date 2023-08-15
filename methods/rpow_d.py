@@ -60,7 +60,7 @@ class rpow_d(object):
 
                 # get local loss
                 Client.receive_global_model_from_server()
-                local_loss = Client.evaluate()
+                local_loss = Client.evaluate(method="rpow_d")
                 
                 req = dist.isend(tensor=torch.tensor([local_loss]), dst=0)
                 req.wait()

@@ -9,6 +9,9 @@ from torch.nn import CrossEntropyLoss
 
 from utils.utils import printLog
 from utils.data_utils import applyCustomDataset
+from utils.data_utils import get_local_datasets_labels_probabilities
+from utils.data_utils import get_uniform_mini_batch
+from utils.data_utils import create_uniform_labels
 from model_controller import CNN_Cifar10
 from model_controller import CNN_Mnist
 from utils.model_utils import TensorBuffer
@@ -72,6 +75,8 @@ class Client(object):
         
         self.dataset = applyCustomDataset(self.dataset_name, data, label)
 
+        self.unique_labels, self.labels_probabilities = get_local_datasets_labels_probabilities(self.dataset)
+            
         dist.barrier()
 
     def doOneLocalEpoch(self, dataloader, optimizer, loss_function):
@@ -123,11 +128,16 @@ class Client(object):
         self.total_train_time += time.time()-start
         return performedLocalEpoch
     
-    def evaluate(self):
+    def evaluate(self, method="None"):
         self.model.eval()
 	
         loss_function = CrossEntropyLoss()
-        dataloader = DataLoader(self.dataset, self.batch_size)
+        if method == "rpow_d":
+            uniform_random_labels = create_uniform_labels(self.unique_labels, self.labels_probabilities, self.batch_size)
+            uniform_mini_batch = get_uniform_mini_batch(self.dataset_name, self.dataset, uniform_random_labels, self.batch_size)
+            dataloader = DataLoader(uniform_mini_batch, self.batch_size)
+        else:
+            dataloader = DataLoader(self.dataset, self.batch_size)
 
         test_loss, correct = 0, 0
         with torch.no_grad():
