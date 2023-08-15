@@ -133,7 +133,7 @@ class Client(object):
 	
         loss_function = CrossEntropyLoss()
         if method == "rpow_d":
-            uniform_random_labels = create_uniform_labels(self.unique_labels, self.labels_probabilities, self.batch_size)
+            uniform_random_labels = create_uniform_labels(list(self.unique_labels), self.labels_probabilities, self.batch_size)
             uniform_mini_batch = get_uniform_mini_batch(self.dataset_name, self.dataset, uniform_random_labels, self.batch_size)
             dataloader = DataLoader(uniform_mini_batch, self.batch_size)
         else:
