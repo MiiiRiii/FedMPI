@@ -1,5 +1,5 @@
 import torch
-
+# [참고] https://team00csduck.tistory.com/232
 class Model(torch.nn.Module):
     def __init__(self):
         super(Model, self).__init__()
@@ -20,7 +20,7 @@ class Model(torch.nn.Module):
         x=self.conv1(x)
         x=self.activation(x)
         x=self.maxpool1(x)
-        
+
         x=self.conv2(x)
         x=self.activation(x)
         x=self.maxpool2(x)

@@ -21,42 +21,42 @@ WORLD_SIZE = int(os.environ['WORLD_SIZE'])
 WORLD_RANK = int(os.environ['RANK'])
 
 def init_FL(FLgroup, args): 
+    for itr in range(5):
+        method=None
+        if args.method=="FedAvg":
+            method = FedAvg.FedAvg()
+        elif args.method=="CHAFL":
+            method = CHAFL.CHAFL()
+        elif args.method=="rpow_d" or args.method=="cpow_d" or args.method=="pow_d":
+            method=powerofchoice.rpow_d(args.method, args.d)
 
-    method=None
-    if args.method=="FedAvg":
-        method = FedAvg.FedAvg()
-    elif args.method=="CHAFL":
-        method = CHAFL.CHAFL()
-    elif args.method=="rpow_d" or args.method=="cpow_d" or args.method=="pow_d":
-        method=powerofchoice.rpow_d(args.method, args.d)
 
+        if WORLD_RANK == 0:
+            if args.wandb_on == "True":
+                wandb.init(project=args.project, entity=args.entity, group=args.group, name=args.name,
+                        config={
+                    "num_clients": WORLD_SIZE-1,
+                    "batch_size": args.batch_size,
+                    "local_epoch": args.local_epochs,
+                    "learning_rate": args.lr,
+                    "dataset": args.dataset,
+                    "data_split": args.split,
+                    "method": args.method,
+                    "system_heterogeneity": args.system_heterogeneity
+                })
+            printLog(f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
+            ps=Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            ps.setup(args.dataset, args.iid, args.split, args.system_heterogeneity)
 
-    if WORLD_RANK == 0:
-        if args.wandb_on == "True":
-            wandb.init(project=args.project, entity=args.entity, group=args.group, name=args.name,
-                    config={
-                "num_clients": WORLD_SIZE-1,
-                "batch_size": args.batch_size,
-                "local_epoch": args.local_epochs,
-                "learning_rate": args.lr,
-                "dataset": args.dataset,
-                "data_split": args.split,
-                "method": args.method,
-                "system_heterogeneity": args.system_heterogeneity
-            })
-        printLog(f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
-        ps=Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
-        ps.setup(args.dataset, args.iid, args.split, args.system_heterogeneity)
-
-        method.runServer(ps)
-        if args.wandb_on == True:
-            wandb.finish()
-    else:
-        #torch.set_num_threads(args.omp_num_threads)
-        printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
-        client = Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
-        client.setup()
-        method.runClient(client)
+            method.runServer(ps)
+            if args.wandb_on == True:
+                wandb.finish()
+        else:
+            #torch.set_num_threads(args.omp_num_threads)
+            printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
+            client = Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
+            client.setup()
+            method.runClient(client)
 
         
 def init_process(args, backend='gloo'):
