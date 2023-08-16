@@ -5,9 +5,13 @@ import torch
 import wandb
 import time
 
-class rpow_d(object):
+# Only implement pow-d, cpow-d
+# Not implement rpow-d
 
-    def __init__(self, d):
+class powerofchoice(object):
+
+    def __init__(self, method, d):
+        self.method = method
         self.d=d
 
     def calculate_coefficient(self, selected_client_idx, Server):
@@ -60,7 +64,11 @@ class rpow_d(object):
 
                 # get local loss
                 Client.receive_global_model_from_server()
-                local_loss = Client.evaluate(method="rpow_d")
+                if self.method =="pow_d":
+                    local_loss = Client.evaluate()
+                elif self.method == "cpow_d":
+                    local_loss = Client.evaluate(method="cpow_d")
+                
                 
                 req = dist.isend(tensor=torch.tensor([local_loss]), dst=0)
                 req.wait()

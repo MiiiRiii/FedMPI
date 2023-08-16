@@ -4,7 +4,7 @@ from utils.utils import printLog
 
 from methods import FedAvg
 from methods import CHAFL
-from methods import rpow_d
+from methods import powerofchoice
 
 import torch.distributed as dist
 import torch.multiprocessing as mp
@@ -27,8 +27,8 @@ def init_FL(FLgroup, args):
         method = FedAvg.FedAvg()
     elif args.method=="CHAFL":
         method = CHAFL.CHAFL()
-    elif args.method=="rpow_d":
-        method=rpow_d.rpow_d(args.rpow_d)
+    elif args.method=="rpow_d" or args.method=="cpow_d" or args.method=="pow_d":
+        method=powerofchoice.rpow_d(args.method, args.d)
 
 
     if WORLD_RANK == 0:
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("--target_acc", type=float)
     parser.add_argument("--system_heterogeneity", choices=[0,1,2], default=0, type=int)
 
-    parser.add_argument("--dataset", choices=['MNIST', 'CIFAR10'], default='CIFAR10', type=str)
+    parser.add_argument("--dataset", choices=['MNIST', 'CIFAR10', 'FashionMNIST'], default='CIFAR10', type=str)
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--split", choices=['uniform', 'gaussian'], default='gaussian', type=str)
 

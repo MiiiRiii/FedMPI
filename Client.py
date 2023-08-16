@@ -12,8 +12,11 @@ from utils.data_utils import applyCustomDataset
 from utils.data_utils import get_local_datasets_labels_probabilities
 from utils.data_utils import get_uniform_mini_batch
 from utils.data_utils import create_uniform_labels
+
 from model_controller import CNN_Cifar10
 from model_controller import CNN_Mnist
+from model_controller import CNN_FashionMNIST
+
 from utils.model_utils import TensorBuffer
 
 
@@ -36,7 +39,10 @@ class Client(object):
             self.model_controller = CNN_Cifar10
         elif(self.dataset_name == "MNIST"):
             self.model_controller = CNN_Mnist
-        
+        elif(self.dataset_name=="FashionMNIST"):
+            self.model_controller = CNN_FashionMNIST
+
+
         self.model = self.model_controller.Model()
 
         dist.barrier()
@@ -76,7 +82,8 @@ class Client(object):
         self.dataset = applyCustomDataset(self.dataset_name, data, label)
 
         self.unique_labels, self.labels_probabilities = get_local_datasets_labels_probabilities(self.dataset)
-            
+        self.num_iteration = len(self.dataset)/self.batch_size
+        printLog(f"CLINT {self.id} >> num of iteration is {len(self.dataset)/self.batch_size}")
         dist.barrier()
 
     def doOneLocalEpoch(self, dataloader, optimizer, loss_function):
@@ -132,7 +139,7 @@ class Client(object):
         self.model.eval()
 	
         loss_function = CrossEntropyLoss()
-        if method == "rpow_d":
+        if method == "cpow_d":
             uniform_random_labels = create_uniform_labels(list(self.unique_labels), self.labels_probabilities, self.batch_size)
             uniform_mini_batch = get_uniform_mini_batch(self.dataset_name, self.dataset, uniform_random_labels, self.batch_size)
             dataloader = DataLoader(uniform_mini_batch, self.batch_size)

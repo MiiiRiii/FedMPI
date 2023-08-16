@@ -8,6 +8,7 @@ from utils.data_utils import create_dataset
 
 from model_controller import CNN_Cifar10
 from model_controller import CNN_Mnist
+from model_controller import CNN_FashionMNIST
 
 from collections import OrderedDict
 from torch.nn import CrossEntropyLoss
@@ -35,6 +36,8 @@ class Server(object):
             self.model_controller = CNN_Cifar10
         elif(dataset=="MNIST"):
             self.model_controller = CNN_Mnist
+        elif(dataset=="FashionMNIST"):
+            self.model_controller = CNN_FashionMNIST
 
         self.model = self.model_controller.Model()
         init_weight(self.model)
