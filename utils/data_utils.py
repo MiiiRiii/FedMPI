@@ -36,14 +36,12 @@ def applyCustomDataset(dataset_name,data, label):
                     torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                 ]
             )
-    elif dataset_name in ["MNIST"] or dataset_name in ["FashionMNIST"]:
+    elif dataset_name in ["MNIST"]:
             transform = torchvision.transforms.ToTensor()
-    """
+    
     elif dataset_name in ["FashionMNIST"]:
-        transform = torchvision.transforms.Compose([
-            torchvision.transforms.ToTensor(), torchvision.transforms.Resize((16,16))
-        ])
-    """
+        transform = torchvision.transforms.ToTensor()
+    
     return CustomTensorDataset((data, label.long()), transform=transform)
 
 def get_local_datasets_labels_probabilities(datasets):
@@ -91,15 +89,13 @@ def create_dataset(num_clients, dataset_name, iid, split):
                     torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                 ]
             )
-    elif dataset_name in ["MNIST"] or dataset_name in ["FashionMNIST"]:
+    elif dataset_name in ["MNIST"]:
             transform = torchvision.transforms.ToTensor()
     
-    """
+    
     elif dataset_name in ["FashionMNIST"]:
-        transform = torchvision.transforms.Compose([
-            torchvision.transforms.Resize((16,16)), torchvision.transforms.ToTensor()
-        ])
-    """
+        transform = torchvision.transforms.ToTensor()
+    
     test_dataset = torchvision.datasets.__dict__[dataset_name](
         root=data_path,
         train=False,

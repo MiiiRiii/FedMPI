@@ -34,13 +34,11 @@ class Server(object):
         printLog(f"PS >> global model을 초기화 합니다.")
         if(dataset=="CIFAR10"):
             self.model_controller = CNN_Cifar10
-        elif(dataset=="MNIST" or dataset=="FashionMNIST"):
+        elif(dataset=="MNIST"):
             self.model_controller = CNN_Mnist
 
-        """
         elif(dataset=="FashionMNIST"):
             self.model_controller = CNN_FashionMNIST
-        """
 
         self.model = self.model_controller.Model()
         init_weight(self.model)
