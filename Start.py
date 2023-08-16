@@ -21,7 +21,7 @@ WORLD_SIZE = int(os.environ['WORLD_SIZE'])
 WORLD_RANK = int(os.environ['RANK'])
 
 def init_FL(FLgroup, args): 
-    for itr in range(5):
+    for itr in range(1):
         method=None
         if args.method=="FedAvg":
             method = FedAvg.FedAvg()

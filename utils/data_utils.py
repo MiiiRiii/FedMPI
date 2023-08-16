@@ -36,14 +36,14 @@ def applyCustomDataset(dataset_name,data, label):
                     torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                 ]
             )
-    elif dataset_name in ["MNIST"] :
+    elif dataset_name in ["MNIST"] or dataset_name in ["FashionMNIST"]:
             transform = torchvision.transforms.ToTensor()
-
+    """
     elif dataset_name in ["FashionMNIST"]:
         transform = torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(), torchvision.transforms.Resize((16,16))
         ])
-
+    """
     return CustomTensorDataset((data, label.long()), transform=transform)
 
 def get_local_datasets_labels_probabilities(datasets):
@@ -91,14 +91,15 @@ def create_dataset(num_clients, dataset_name, iid, split):
                     torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                 ]
             )
-    elif dataset_name in ["MNIST"] :
+    elif dataset_name in ["MNIST"] or dataset_name in ["FashionMNIST"]:
             transform = torchvision.transforms.ToTensor()
     
+    """
     elif dataset_name in ["FashionMNIST"]:
         transform = torchvision.transforms.Compose([
             torchvision.transforms.Resize((16,16)), torchvision.transforms.ToTensor()
         ])
-
+    """
     test_dataset = torchvision.datasets.__dict__[dataset_name](
         root=data_path,
         train=False,
@@ -145,7 +146,6 @@ def create_dataset(num_clients, dataset_name, iid, split):
         ]
     # non-iid로 dataset split
     else:
-
         local_datasets = []
 
         # training_data의 label을 오름차순으로 정렬
@@ -165,9 +165,11 @@ def create_dataset(num_clients, dataset_name, iid, split):
         elif split == "gaussian":  # client들이 가져가는 데이터 개수가 gaussian 분포를 따름
             std=0
             if dataset_name=="CIFAR10":
-                 std=300
+                std=300
             elif dataset_name=="MNIST":
-                 std=400
+                std=400
+            elif dataset_name=="FashionMNIST":
+                std=400
             local_datasets = split_dataset_gaussian(
                 training_inputs, training_labels, num_clients, transform, len_training_inputs, std)
 

@@ -37,11 +37,13 @@ class Client(object):
         printLog(f"CLIENT {self.id} >> 빈 모델을 생성합니다.")
         if(self.dataset_name == "CIFAR10"):
             self.model_controller = CNN_Cifar10
-        elif(self.dataset_name == "MNIST"):
+        elif(self.dataset_name == "MNIST" or self.dataset_name=="FashionMNIST"):
             self.model_controller = CNN_Mnist
+        
+        """
         elif(self.dataset_name=="FashionMNIST"):
             self.model_controller = CNN_FashionMNIST
-
+        """
 
         self.model = self.model_controller.Model()
 
