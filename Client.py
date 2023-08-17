@@ -15,7 +15,6 @@ from utils.data_utils import create_uniform_labels
 
 from model_controller import CNN_Cifar10
 from model_controller import CNN_Mnist
-from model_controller import CNN_FashionMNIST
 
 from utils.model_utils import TensorBuffer
 

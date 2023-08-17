@@ -8,7 +8,6 @@ from utils.data_utils import create_dataset
 
 from model_controller import CNN_Cifar10
 from model_controller import CNN_Mnist
-from model_controller import CNN_FashionMNIST
 
 from collections import OrderedDict
 from torch.nn import CrossEntropyLoss
