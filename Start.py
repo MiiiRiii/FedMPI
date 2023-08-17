@@ -78,7 +78,7 @@ if __name__ == "__main__":
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--split", choices=['uniform', 'gaussian'], default='gaussian', type=str)
 
-    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','rpow_d'], default='FedAvg', type=str)
+    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d'], default='FedAvg', type=str)
     parser.add_argument("--rpow_d", type=int)
     
     parser.add_argument("--wandb_on", choices=['True', 'False'], default='False', type=str)
