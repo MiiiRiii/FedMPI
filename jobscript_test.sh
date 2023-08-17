@@ -29,10 +29,10 @@ NODEFILE=("210.107.197.167" "210.107.197.182" "210.107.197.190" "210.107.197.213
 for i in "${NODEFILE[@]}"; do
         if [ ${cnt} -eq 0 ]; then
                 export server_ip=$i
-                ssh $i server_ip=$server_ip server_port=$server_port num_clients=$num_clients nproc_per_node=${nproc_per_node[$cnt]} num_threads=$num_threads nnodes=$nnodes lr=$lr dataset=$dataset iid=$iid split=$split /home/{$USER}/miri/FedMPI/server.sh &
+                ssh $i server_ip=$server_ip server_port=$server_port num_clients=$num_clients nproc_per_node=${nproc_per_node[$cnt]} num_threads=$num_threads nnodes=$nnodes lr=$lr dataset=$dataset iid=$iid split=$split /home/$USER/miri/FedMPI/server.sh &
         fi
         if [ ${cnt} -ne 0 ]; then
-                ssh $i server_ip=$server_ip server_port=$server_port num_clients=$num_clients nproc_per_node=${nproc_per_node[$cnt]} num_threads=$num_threads nnodes=$nnodes lr=$lr dataset=$dataset iid=$iid split=$split node_rank=$cnt /home/{$USER}/miri/FedMPI/client.sh &
+                ssh $i server_ip=$server_ip server_port=$server_port num_clients=$num_clients nproc_per_node=${nproc_per_node[$cnt]} num_threads=$num_threads nnodes=$nnodes lr=$lr dataset=$dataset iid=$iid split=$split node_rank=$cnt /home/$USER/miri/FedMPI/client.sh &
         fi
         cnt=$((cnt+1))
 done
