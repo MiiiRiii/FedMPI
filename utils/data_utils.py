@@ -40,7 +40,7 @@ def applyCustomDataset(dataset_name,data, label):
             transform = torchvision.transforms.ToTensor()
     
     elif dataset_name in ["FashionMNIST"]:
-        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor(), torchvision.transforms.Normalize((0.5,), (0.5,))])
+        transform = torchvision.transforms.ToTensor()
     
     return CustomTensorDataset((data, label.long()), transform=transform)
 
@@ -94,7 +94,7 @@ def create_dataset(num_clients, dataset_name, iid, split):
     
     
     elif dataset_name in ["FashionMNIST"]:
-        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor(), torchvision.transforms.Normalize((0.5,), (0.5,))])
+        transform = torchvision.transforms.ToTensor()
     
     test_dataset = torchvision.datasets.__dict__[dataset_name](
         root=data_path,
