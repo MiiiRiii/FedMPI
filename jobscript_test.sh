@@ -1,6 +1,6 @@
 #!/bin/bash
 
-server_port=$((RANDOM%55535+10000))
+server_port=29603
 num_clients=20
 num_threads=3
 nnodes=5
@@ -24,20 +24,20 @@ fi
 
 cnt=0
 
-NODEFILE=("210.107.197.167" "210.107.197.182" "210.107.197.190" "210.107.197.213" "210.107.197.212" "210.107.197.188")
 
 
+server_ip="210.107.197.167"
 
-export server_ip=210.107.197.167
+sshpass -p wise!1448 ssh wise@210.107.197.167 "source /home/wise/anaconda3/etc/profile.d/conda.sh;source /home/wise/anaconda3/bin/activate FL;export server_ip=$server_ip;export server_port=$server_port;export num_clients=$num_clients;export nproc_per_node=${nproc_per_node[$cnt]};export num_threads=$num_threads;export nnodes=$nnodes;export lr=$lr;export dataset=$dataset;export iid=$iid;export split=$split;export node_rank=$cnt;source /home/$USER/miri/FedMPI/server.sh;" &
+cnt=$((cnt+1))
+sshpass -p wise ssh euler@210.107.197.188 "source /home/euler/anaconda3/etc/profile.d/conda.sh;source /home/euler/anaconda3/bin/activate FL;export server_ip=$server_ip;export server_port=$server_port;export num_clients=$num_clients;export nproc_per_node=${nproc_per_node[$cnt]};export num_threads=$num_threads;export nnodes=$nnodes;export lr=$lr;export dataset=$dataset;export iid=$iid;export split=$split;export node_rank=$cnt;export GLOO_SOCKET_IFNAME=eno1;source /home/euler/miri/FedMPI/client.sh;" &
+cnt=$((cnt+1))
+sshpass -p eB3pY32r ssh dijkstra@210.107.197.212 "source /home/dijkstra/anaconda3/etc/profile.d/conda.sh;source /home/dijkstra/anaconda3/bin/activate FL;export server_ip=$server_ip;export server_port=$server_port;export num_clients=$num_clients;export nproc_per_node=${nproc_per_node[$cnt]};export num_threads=$num_threads;export nnodes=$nnodes;export lr=$lr;export dataset=$dataset;export iid=$iid;export split=$split;export node_rank=$cnt;export GLOO_SOCKET_IFNAME=eno1;source /home/dijkstra/miri/FedMPI/client.sh;" &
+cnt=$((cnt+1))
+sshpass -p asdf7946 ssh hdoop@210.107.197.213 "source /home/hdoop/anaconda3/etc/profile.d/conda.sh;source /home/hdoop/anaconda3/bin/activate FL;export server_ip=$server_ip;export server_port=$server_port;export num_clients=$num_clients;export nproc_per_node=${nproc_per_node[$cnt]};export num_threads=$num_threads;export nnodes=$nnodes;export lr=$lr;export dataset=$dataset;export iid=$iid;export split=$split;export node_rank=$cnt;export GLOO_SOCKET_IFNAME=eno1;source /home/hdoop/miri/FedMPI/client.sh;" &
+cnt=$((cnt+1))
+sshpass -p wise!1448 ssh wise@210.107.197.182 "source /home/wise/anaconda3/etc/profile.d/conda.sh;source /home/wise/anaconda3/bin/activate FL;export server_ip=$server_ip;export server_port=$server_port;export num_clients=$num_clients;export nproc_per_node=${nproc_per_node[$cnt]};export num_threads=$num_threads;export nnodes=$nnodes;export lr=$lr;export dataset=$dataset;export iid=$iid;export split=$split;export node_rank=$cnt;export GLOO_SOCKET_IFNAME=eno1;source /home/wise/miri/FedMPI/client.sh;" &
 
-sshpass -p wise!1448 ssh wise@210.107.197.167 "source /home/wise/anaconda3/etc/profile.d/conda.sh;source /home/wise/anaconda3/bin/activate FL;source /home/$USER/miri/FedMPI/server.sh server_ip=$server_ip server_port=$server_port num_clients=$num_clients nproc_per_node=${nproc_per_node[$cnt]} num_threads=$num_threads nnodes=$nnodes lr=$lr dataset=$dataset iid=$iid split=$split node_rank=$cnt;" &
 
-sshpass -p wise ssh euler@210.107.197.188 "source /home/euler/anaconda3/etc/profile.d/conda.sh;source /home/euler/anaconda3/bin/activate FL;source /home/euler/miri/FedMPI/client.sh server_ip=$server_ip server_port=$server_port num_clients=$num_clients nproc_per_node=${nproc_per_node[$cnt]} num_threads=$num_threads nnodes=$nnodes lr=$lr dataset=$dataset iid=$iid split=$split node_rank=$cnt;" &
-
-sshpass -p eB3pY32r ssh dijkstra@210.107.197.212 "source /home/dijkstra/anaconda3/etc/profile.d/conda.sh;source /home/dijkstra/anaconda3/bin/activate FL;source /home/dijkstra/miri/FedMPI/client.sh server_ip=$server_ip server_port=$server_port num_clients=$num_clients nproc_per_node=${nproc_per_node[$cnt]} num_threads=$num_threads nnodes=$nnodes lr=$lr dataset=$dataset iid=$iid split=$split node_rank=$cnt;" &
-
-sshpass -p asdf7946 ssh hdoop@210.107.197.213 "source /home/hdoop/anaconda3/etc/profile.d/conda.sh;source /home/hdoop/anaconda3/bin/activate FL;source /home/hdoop/miri/FedMPI/client.sh; server_ip=$server_ip server_port=$server_port num_clients=$num_clients nproc_per_node=${nproc_per_node[$cnt]} num_threads=$num_threads nnodes=$nnodes lr=$lr dataset=$dataset iid=$iid split=$split node_rank=$cnt" &
-
-sshpass -p wise!1448 ssh wise@210.107.197.182 "source /home/wise/anaconda3/etc/profile.d/conda.sh;source /home/wise/anaconda3/bin/activate FL;source /home/wise/miri/FedMPI/client.sh; server_ip=$server_ip server_port=$server_port num_clients=$num_clients nproc_per_node=${nproc_per_node[$cnt]} num_threads=$num_threads nnodes=$nnodes lr=$lr dataset=$dataset iid=$iid split=$split node_rank=$cnt" &
 
 
