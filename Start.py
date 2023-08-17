@@ -48,6 +48,7 @@ def init_FL(FLgroup, args):
             ps=Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
             ps.setup(args.dataset, args.iid, args.split, args.system_heterogeneity)
 
+            
             method.runServer(ps)
             if args.wandb_on == True:
                 wandb.finish()

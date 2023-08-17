@@ -55,8 +55,9 @@ class FedAvg(object):
 
     def runServer(self, Server):
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
+        current_FL_start=time.time()
         while True:
-            start=time.time()
+            current_round_start=time.time()
             selected_client_idx = self.client_select_randomly(clients_idx, int(Server.selection_ratio * Server.num_clients))
             printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=Server.FLgroup)
@@ -76,7 +77,7 @@ class FedAvg(object):
             printLog(f"PS >> {Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
 
             if Server.wandb_on=="True":
-                wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-start})
+                wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-current_round_start, "wall_time(m)":(time.time()-current_FL_start)/60})
 
             dist.barrier()
             
