@@ -28,7 +28,7 @@ def init_FL(FLgroup, args):
         elif args.method=="CHAFL":
             method = CHAFL.CHAFL()
         elif args.method=="rpow_d" or args.method=="cpow_d" or args.method=="pow_d":
-            method=powerofchoice.rpow_d(args.method, args.d)
+            method=powerofchoice.powerofchoice(args.method, args.d)
 
 
         if WORLD_RANK == 0:
