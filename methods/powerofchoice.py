@@ -27,7 +27,7 @@ class powerofchoice(object):
 
         return coefficient
     
-    def client_select_rpow_d(self, d, num_selected_clients):
+    def client_select_pow_d(self, d, num_selected_clients):
         local_loss_list={}
         local_loss=torch.zeros(1)
 
@@ -110,7 +110,7 @@ class powerofchoice(object):
 
             # select clients
             Server.send_global_model_to_clients(candidate_clients)
-            selected_client_idx = self.client_select_rpow_d(self.d, int(Server.selection_ratio * Server.num_clients))
+            selected_client_idx = self.client_select_pow_d(self.d, int(Server.selection_ratio * Server.num_clients))
             printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=candidate_clients_group)
             dist.destroy_process_group(candidate_clients_group)

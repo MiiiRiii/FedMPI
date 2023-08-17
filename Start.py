@@ -21,7 +21,7 @@ WORLD_SIZE = int(os.environ['WORLD_SIZE'])
 WORLD_RANK = int(os.environ['RANK'])
 
 def init_FL(FLgroup, args): 
-    for itr in range(1):
+    for itr in range(args.repeat):
         method=None
         if args.method=="FedAvg":
             method = FedAvg.FedAvg()
@@ -50,7 +50,7 @@ def init_FL(FLgroup, args):
 
             
             method.runServer(ps)
-            if args.wandb_on == True:
+            if args.wandb_on == "True":
                 wandb.finish()
         else:
             #torch.set_num_threads(args.omp_num_threads)
@@ -79,13 +79,15 @@ if __name__ == "__main__":
     parser.add_argument("--split", choices=['uniform', 'gaussian'], default='gaussian', type=str)
 
     parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d'], default='FedAvg', type=str)
-    parser.add_argument("--rpow_d", type=int)
+    parser.add_argument("--d", type=int)
     
     parser.add_argument("--wandb_on", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--project",type=str)
     parser.add_argument("--entity",type=str)
     parser.add_argument("--group",type=str)
     parser.add_argument("--name",type=str)
+
+    parser.add_argument("--repeat",type=int)
     
     args=parser.parse_args()
     init_process(args)
