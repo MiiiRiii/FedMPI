@@ -38,7 +38,7 @@ class Server(object):
             self.model_controller = CNN_Mnist
 
         elif(dataset=="FashionMNIST"):
-            self.model_controller = CNN_FashionMNIST
+            self.model_controller = CNN_Mnist
 
         self.model = self.model_controller.Model()
         init_weight(self.model)

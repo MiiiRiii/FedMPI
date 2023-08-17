@@ -40,8 +40,7 @@ class Client(object):
         elif(self.dataset_name == "MNIST"):
             self.model_controller = CNN_Mnist
         elif(self.dataset_name=="FashionMNIST"):
-            self.model_controller = CNN_FashionMNIST
-
+            self.model_controller = CNN_Mnist
 
         self.model = self.model_controller.Model()
 
