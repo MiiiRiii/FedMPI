@@ -58,11 +58,11 @@ class Server(object):
         self.send_local_train_dataset_to_clients(train_datasets)
         
         if cluster_type == "WISE":
-            self.send_omp_num_threads_to_clients(self.num_clients, dataset)
+            self.send_omp_num_threads_to_clients(dataset)
 
-    def send_omp_num_threads_to_clients(self):
+    def send_omp_num_threads_to_clients(self, dataset):
 
-        omp_num_threads_lists = omp_num_threads_per_clients(self.num_clients)
+        omp_num_threads_lists = omp_num_threads_per_clients(self.num_clients, dataset)
         for idx, threads in enumerate(omp_num_threads_lists):
             dist.send(tensor=torch.tensor([float(threads)]), dst=idx+1)
 
