@@ -99,9 +99,10 @@ class powerofchoice(object):
                 break
 
     def runServer(self, Server):
+        current_FL_start=time.time()
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
         while True:
-            start=time.time()
+            current_round_start=time.time()
 
             # candidate clients
             candidate_clients = random.sample(clients_idx, self.d)
@@ -124,7 +125,7 @@ class powerofchoice(object):
             printLog(f"PS >> {Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
 
             if Server.wandb_on=="True":
-                wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-start})
+                wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-current_round_start, "wall_time(m)":(time.time()-current_FL_start)/60})
 
             dist.barrier()
             

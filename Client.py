@@ -32,7 +32,7 @@ class Client(object):
         
         self.FLgroup = FLgroup
     
-    def setup(self):
+    def setup(self, cluster_type, num_thread):
         printLog(f"CLIENT {self.id} >> 빈 모델을 생성합니다.")
         if(self.dataset_name == "CIFAR10"):
             self.model_controller = CNN_Cifar10
@@ -47,8 +47,11 @@ class Client(object):
         
         # receive train dataset 
         self.receive_local_train_dataset_from_server()
-
-        self.receive_omp_num_threads_from_server()
+        
+        if cluster_type == "KISTI":
+            torch.set_num_threads(int(num_thread))
+        else:
+            self.receive_omp_num_threads_from_server()
     
     def receive_omp_num_threads_from_server(self):
         tensor=torch.zeros(1)
@@ -81,7 +84,6 @@ class Client(object):
 
         self.unique_labels, self.labels_probabilities = get_local_datasets_labels_probabilities(self.dataset)
         self.num_iteration = len(self.dataset)/self.batch_size
-        printLog(f"CLINT {self.id} >> num of iteration is {len(self.dataset)/self.batch_size}")
         dist.barrier()
 
     def doOneLocalEpoch(self, dataloader, optimizer, loss_function):

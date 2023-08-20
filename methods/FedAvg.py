@@ -54,8 +54,9 @@ class FedAvg(object):
                 break
 
     def runServer(self, Server):
-        clients_idx = [idx for idx in range(1, Server.num_clients+1)]
         current_FL_start=time.time()
+        clients_idx = [idx for idx in range(1, Server.num_clients+1)]
+        
         while True:
             current_round_start=time.time()
             selected_client_idx = self.client_select_randomly(clients_idx, int(Server.selection_ratio * Server.num_clients))

@@ -27,7 +27,7 @@ class Server(object):
         self.len_local_dataset=[]
         self.current_round=0
         
-    def setup(self, dataset, iid, split, system_heterogeneity):
+    def setup(self, dataset, iid, split, cluster_type):
         
         # global model초기화    
         printLog(f"PS >> global model을 초기화 합니다.")
@@ -56,17 +56,16 @@ class Server(object):
         dist.barrier()
 
         self.send_local_train_dataset_to_clients(train_datasets)
+        
+        if cluster_type == "WISE":
+            self.send_omp_num_threads_to_clients(self.num_clients, dataset)
 
-        self.send_omp_num_threads_to_clients(system_heterogeneity)
+    def send_omp_num_threads_to_clients(self):
 
-    def send_omp_num_threads_to_clients(self, system_heterogeneity):
-        if system_heterogeneity>0:
-            omp_num_threads_lists = omp_num_threads_per_clients(self.num_clients, system_heterogeneity)
-            for idx, threads in enumerate(omp_num_threads_lists):
-                dist.send(tensor=torch.tensor([float(threads)]), dst=idx+1)
-        elif system_heterogeneity==0:
-            for idx in range(self.num_clients): # 모두 thread 2개를 사용해서 학습 진행
-                dist.send(tensor=torch.tensor([float(2)]), dst=idx+1)
+        omp_num_threads_lists = omp_num_threads_per_clients(self.num_clients)
+        for idx, threads in enumerate(omp_num_threads_lists):
+            dist.send(tensor=torch.tensor([float(threads)]), dst=idx+1)
+
         dist.barrier()
 
     def send_local_train_dataset_to_clients(self, train_datasets):

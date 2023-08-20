@@ -19,9 +19,18 @@ MASTER_ADDR = os.environ['MASTER_ADDR']
 MASTER_PORT = os.environ['MASTER_PORT']
 WORLD_SIZE = int(os.environ['WORLD_SIZE'])
 WORLD_RANK = int(os.environ['RANK'])
+LOCAL_RANK = int(os.environ['LOCAL_RANK'])
 
 def init_FL(FLgroup, args): 
     for itr in range(args.repeat):
+
+        if args.cluster_type == "KISTI":
+            num_thread = args.num_threads.split()
+            #num_thread = list(args.num_threads)
+            print(num_thread)
+        else:
+            num_thread = [-1 for idx in range(WORLD_SIZE)]
+
         method=None
         if args.method=="FedAvg":
             method = FedAvg.FedAvg()
@@ -42,11 +51,11 @@ def init_FL(FLgroup, args):
                     "dataset": args.dataset,
                     "data_split": args.split,
                     "method": args.method,
-                    "system_heterogeneity": args.system_heterogeneity
                 })
             printLog(f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
             ps=Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
-            ps.setup(args.dataset, args.iid, args.split, args.system_heterogeneity)
+
+            ps.setup(args.dataset, args.iid, args.split, args.cluster_type)
 
             
             method.runServer(ps)
@@ -56,7 +65,7 @@ def init_FL(FLgroup, args):
             #torch.set_num_threads(args.omp_num_threads)
             printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
             client = Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
-            client.setup()
+            client.setup(args.cluster_type, num_thread=num_thread[LOCAL_RANK])
             method.runClient(client)
 
         
@@ -72,7 +81,6 @@ if __name__ == "__main__":
     parser.add_argument("--local_epochs", type=int)
     parser.add_argument("--lr",type=float)
     parser.add_argument("--target_acc", type=float)
-    parser.add_argument("--system_heterogeneity", choices=[0,1,2], default=0, type=int)
 
     parser.add_argument("--dataset", choices=['MNIST', 'CIFAR10', 'FashionMNIST'], default='CIFAR10', type=str)
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)
@@ -88,6 +96,10 @@ if __name__ == "__main__":
     parser.add_argument("--name",type=str)
 
     parser.add_argument("--repeat",type=int)
+
+    parser.add_argument("--cluster_type", choices=['WISE', 'KISTI'], type=str)
+
+    parser.add_argument("--num_threads", type=str)
     
     args=parser.parse_args()
     init_process(args)

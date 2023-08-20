@@ -110,13 +110,13 @@ class CHAFL(object):
                 break
     
     def runServer(self, Server):
+        current_FL_start=time.time()
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
         random_clients_idx=clients_idx[:]
         global_acc, global_loss = Server.evaluate()
         printLog(f"PS >> 초기 글로벌 모델의 loss는 {round(global_loss,4)}입니다.")
-        
         while True:
-            start=time.time()
+            current_round_start=time.time()
             random.shuffle(random_clients_idx)
             Server.send_global_model_to_clients(random_clients_idx)
 
@@ -144,7 +144,7 @@ class CHAFL(object):
             printLog(f"PS >> {Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
 
             if Server.wandb_on=="True":
-                wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-start})
+                wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-current_round_start, "wall_time(m)":(time.time()-current_FL_start)/60 })
 
             dist.barrier()
             
