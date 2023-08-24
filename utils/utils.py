@@ -16,6 +16,7 @@ def omp_num_threads_per_clients(num_clients, dataset_name):
         num_threads+=[t for idx in range(int(num_clients/len(thread_list)))]
     
     random.shuffle(num_threads)
+    return num_threads
 
 def printLog(message):
     now = str(datetime.now())

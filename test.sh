@@ -1,47 +1,24 @@
 #!/bin/bash
 
-array=(1 1 1 1 1 1 2 2 2 2 2 2 3 3 3 3 3 3 4 4 4 4 4 4 7 7 7 7 7 7)
+#!/bin/bash
 
-shuffled=($(shuf -e "${array[@]}"))
+t1=(1 2 51 50 50)
+t2=(2 3 68 32 34)
+t3=(3 5 61 20 20)
+t4=(4 6 68 15 17)
+t5=(5 8 65 9 13)
+t6=(6 10 66 1 11)
+t7=(7 12 63 1 9)
+t8=(8 13 64 4 8)
+t9=(9 15 63 2 7)
+t10=(10 17 60 4 6)
 
-
-arr_idx=0
-s=0
-e=0
-echo ${shuffled[@]}
-for i in {1..2}; do
-	cnt=0
-	s=$arr_idx
-
-	while [ $arr_idx -ne 30 ]; do
-		cnt=$((cnt+shuffled[arr_idx]))
-		if [ $((cnt+shuffled[arr_idx+1])) -gt 68 ]; then 
-	
-			arr_idx=$((arr_idx+1))
-			break
-		fi
-		arr_idx=$((arr_idx+1))
-
-	done
-
-	e=$((arr_idx-1))
-	
-	subset=("${shuffled[@]:$s:$((e+1))}")
-	num_threads_per_node="${subset[@]}"
-	
-	echo "0 $num_threads_per_node"
-	echo "cnt: $cnt"
-	echo "s: $s"
-	echo "e: $e"
-done
+arrays=(t1 t2 t3 t4 t5 t6 t7 t8 t9 t10)
 
 
-num_thread=(1 2 3 4 5)
-#for item in "${num_thread[@]}"; do
-#	num_thread_string="${num_thread_string}${item}"
-#done
-#echo $num_thread_string
-num_thread_string="${num_thread[@]}"
-echo "$num_thread_string"
-torchrun --nnodes=6 --nproc_per_node=1 --node_rank=0 --rdzv_id=0 --rdzv_endpoint=210.107.197.167:29603 --master_addr=210.107.197.167 --master_port=29603 Start.py --selection_ratio=0.1 --round=1500 --batch_size=32 --local_epochs=5 --lr=0.001 --target_acc=0.9 --dataset=CIFAR10 --iid=False --split=gaussian --method=CHAFL --d=30 --wandb_on=True --project=FedMPI --entity=yumiri --group=CIFAR10 --name=CHAFL --repeat=7 --cluster_type=WISE
+param=("${t1[@]}")
+dataset=("MNIST" "FashionMNIST" "CIFAR10")
+lr=(0.01 0.01 0.001)
 
+echo $param
+echo "${param[1]}"

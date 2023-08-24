@@ -60,6 +60,7 @@ class powerofchoice(object):
             
             # when i am a candidate client
             if candidate :
+                printLog(f"CLIENT {Client.id} >> I'm candidate group")
                 candidate_clients_group = dist.new_group(candidate_clients.tolist()+[0])
 
                 # get local loss
@@ -103,9 +104,9 @@ class powerofchoice(object):
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
         while True:
             current_round_start=time.time()
-
             # candidate clients
             candidate_clients = random.sample(clients_idx, self.d)
+            printLog(f"PS >> candidate group is {candidate_clients}")
             dist.broadcast(tensor=torch.tensor(candidate_clients), src=0, group=Server.FLgroup)
             candidate_clients_group = dist.new_group(candidate_clients+[0])
 
