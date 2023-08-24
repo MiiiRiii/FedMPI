@@ -57,13 +57,12 @@ class powerofchoice(object):
                 if idx == Client.id:
                     candidate=True
                     break
-            
+            candidate_clients_group = dist.new_group(candidate_clients.tolist()+[0])
+
             # when i am a candidate client
             if candidate :
                 printLog(f"CLIENT {Client.id} >> I'm candidate group")
-                new_group_list = candidate_clients.tolist()+[0]
-                candidate_clients_group = dist.new_group(new_group_list)
-
+                
                 # get local loss
                 Client.receive_global_model_from_server()
                 if self.method =="pow_d":
@@ -110,7 +109,8 @@ class powerofchoice(object):
             printLog(f"PS >> candidate group is {candidate_clients}")
             dist.broadcast(tensor=torch.tensor(candidate_clients), src=0, group=Server.FLgroup)
             new_group_list = candidate_clients+[0]
-            candidate_clients_group = dist.new_group(new_group_list, backend="gloo")
+            print(new_group_list)
+            candidate_clients_group = dist.new_group(candidate_clients+[0], backend="gloo")
 
             # select clients
             Server.send_global_model_to_clients(candidate_clients)
