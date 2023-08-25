@@ -28,7 +28,7 @@ def init_FL(FLgroup, args):
         if args.cluster_type == "KISTI":
             num_thread = [item for item in args.num_threads]
             print(f"Process {WORLD_RANK} uses {num_thread[LOCAL_RANK]} threads")
-            torch.set_num_threads(num_thread[LOCAL_RANK])
+            torch.set_num_threads(int(num_thread[LOCAL_RANK]))
         else:
             num_thread = [-1 for idx in range(WORLD_SIZE)]
 
