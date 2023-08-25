@@ -5,3 +5,7 @@
 /utils/__pycache__
 /__pycache__
 *.pyc
+./jobscript_test.sh
+./second_jobscript.sh
+./client.sh
+./server.sh

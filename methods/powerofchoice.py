@@ -61,7 +61,6 @@ class powerofchoice(object):
 
             # when i am a candidate client
             if candidate :
-                printLog(f"CLIENT {Client.id} >> I'm candidate group")
                 
                 # get local loss
                 Client.receive_global_model_from_server()
@@ -106,7 +105,6 @@ class powerofchoice(object):
             current_round_start=time.time()
             # candidate clients
             candidate_clients = random.sample(clients_idx, self.d)
-            printLog(f"PS >> candidate group is {candidate_clients}")
             dist.broadcast(tensor=torch.tensor(candidate_clients), src=0, group=Server.FLgroup)
             new_group_list = candidate_clients+[0]
             print(new_group_list)

@@ -13,6 +13,7 @@ import socket
 import wandb
 import argparse
 import time
+import torch
 
 
 MASTER_ADDR = os.environ['MASTER_ADDR']
@@ -25,9 +26,9 @@ def init_FL(FLgroup, args):
     for itr in range(args.repeat):
 
         if args.cluster_type == "KISTI":
-            num_thread = args.num_threads.split()
-            #num_thread = list(args.num_threads)
-            print(num_thread)
+            num_thread = [item for item in args.num_threads]
+            print(f"Process {WORLD_RANK} uses {num_thread[LOCAL_RANK]} threads")
+            torch.set_num_threads(num_thread[LOCAL_RANK])
         else:
             num_thread = [-1 for idx in range(WORLD_SIZE)]
 
@@ -51,6 +52,7 @@ def init_FL(FLgroup, args):
                     "dataset": args.dataset,
                     "data_split": args.split,
                     "method": args.method,
+                    "d": args.method
                 })
             printLog(f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
             ps=Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
@@ -65,7 +67,7 @@ def init_FL(FLgroup, args):
             #torch.set_num_threads(args.omp_num_threads)
             printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
             client = Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
-            client.setup(args.cluster_type, num_thread=num_thread[LOCAL_RANK])
+            client.setup(args.cluster_type)
             method.runClient(client)
 
         

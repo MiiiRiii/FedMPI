@@ -32,7 +32,7 @@ class Client(object):
         
         self.FLgroup = FLgroup
     
-    def setup(self, cluster_type, num_thread):
+    def setup(self, cluster_type):
         printLog(f"CLIENT {self.id} >> 빈 모델을 생성합니다.")
         if(self.dataset_name == "CIFAR10"):
             self.model_controller = CNN_Cifar10
@@ -48,9 +48,7 @@ class Client(object):
         # receive train dataset 
         self.receive_local_train_dataset_from_server()
         
-        if cluster_type == "KISTI":
-            torch.set_num_threads(int(num_thread))
-        else:
+        if cluster_type == "WISE":
             self.receive_omp_num_threads_from_server()
     
     def receive_omp_num_threads_from_server(self):
