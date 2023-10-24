@@ -16,7 +16,7 @@ from model_controller import CNN_Mnist
 from utils.model_utils import TensorBuffer
 
 
-class Client(object):
+class FedAvgClient:
     def __init__(self, num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup):
         self.num_selected_clients=num_selected_clients
         self.id=dist.get_rank()
@@ -69,6 +69,16 @@ class Client(object):
         dist.recv(tensor=train_data_shape, src=0)
         data = torch.zeros(train_data_shape.type(torch.int32).tolist())
         dist.recv(tensor=data, src=0)
+
+        label_shape = torch.zeros(1)
+        dist.recv(tensor=label_shape, src=0)
+        label = torch.zeros(label_shape.type(torch.int32).tolist())
+        dist.recv(tensor=label, src=0)
+        label = label.type(torch.int64)
+
+        self.dataset = applyCustomDataset(self.dataset_name, data, label)
+
+        printLog(f"CLIENT {self.id} >> 로컬데이터셋을 받았습니다.")
         
         dist.barrier()
 

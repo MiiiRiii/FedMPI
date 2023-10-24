@@ -1,4 +1,4 @@
-from FedAvg import FedAvgClient
+from methods.FedAvg import FedAvgClient
 
 import time
 import torch
@@ -10,10 +10,7 @@ from torch.utils.data import DataLoader
 from torch.optim import SGD
 from torch.nn import CrossEntropyLoss
 
-class CHAFLClient(FedAvgClient):
-    def __init__():
-        None
-
+class CHAFLClient(FedAvgClient.FedAvgClient):
     def doOneLocalEpoch(self, dataloader, optimizer, loss_function):
         for data, labels in dataloader:
             optimizer.zero_grad()
@@ -22,7 +19,7 @@ class CHAFLClient(FedAvgClient):
             loss.backward()
             optimizer.step()
 
-    def train(self):
+    def train(self, currentRoundGroup):
         printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
         
         localEpoch = self.local_epoch-1
@@ -52,8 +49,8 @@ class CHAFLClient(FedAvgClient):
                 continueLocalUpdate=False
                 break
             self.doOneLocalEpoch(dataloader, optimizer, loss_function)
-            performedLocalEpoch+=1    
-            printLog(f"CLIENT {self.id} >> {performedLocalEpoch} epoch을 수행했습니다.")  
+            localEpoch+=1    
+            printLog(f"CLIENT {self.id} >> {localEpoch} epoch을 수행했습니다.")  
 
         self.total_train_time += time.time()-start
         return localEpoch

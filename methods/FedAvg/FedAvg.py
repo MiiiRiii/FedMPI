@@ -42,7 +42,6 @@ class FedAvg(object):
             if(selected):
                 Client.receive_global_model_from_server()
                 Client.train()
-                printLog(f"CLIENT {Client.id} >> 평균 학습 소요 시간: {Client.total_train_time/Client.num_of_selected}")
                 Client.send_local_model_to_server()
 
             dist.barrier()

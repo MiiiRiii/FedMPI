@@ -1,4 +1,4 @@
-from FedAvg import FedAvgClient
+from methods.FedAvg import FedAvgClient
 
 import torch
 import torch.distributed as dist
@@ -12,24 +12,13 @@ from utils.data_utils import create_uniform_labels
 from utils.data_utils import get_local_datasets_labels_probabilities
 
 
-class PowerOfChoiceClient(FedAvgClient):
-    def __init__():
-        None
+class PowerOfChoiceClient(FedAvgClient.FedAvgClient):
+    def __init__(self, num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup):
+        super().__init__(num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup)
 
     def receive_local_train_dataset_from_server(self):
-        train_data_shape = torch.zeros(4)
-        dist.recv(tensor=train_data_shape, src=0)
-        data = torch.zeros(train_data_shape.type(torch.int32).tolist())
-        dist.recv(tensor=data, src=0)
+        super().receive_global_model_from_server()
         
-        label_shape = torch.zeros(1)
-        dist.recv(tensor=label_shape, src=0)
-        label = torch.zeros(label_shape.type(torch.int32).tolist())
-        dist.recv(tensor=label, src=0)
-        label = label.type(torch.int64)
-        
-        self.dataset = applyCustomDataset(self.dataset_name, data, label)
-
         self.unique_labels, self.labels_probabilities = get_local_datasets_labels_probabilities(self.dataset)
         self.num_iteration = len(self.dataset)/self.batch_size
         

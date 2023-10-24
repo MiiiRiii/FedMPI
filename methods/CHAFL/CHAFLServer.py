@@ -1,13 +1,13 @@
-from FedAvg import FedAvgServer
+from methods.FedAvg import FedAvgServer
 import torch
 
 from utils.utils import printLog
 
 import torch.distributed as dist
 
-class CHAFLServer(FedAvgServer):
-    def __init__(self):
-        None
+class CHAFLServer(FedAvgServer.FedAvgServer):
+    def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup):
+        super().__init__(num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup)
 
     def wait_local_update_of_selected_clients(self, currentRoundGroup, selected_clients_idx):
         reqs=[]

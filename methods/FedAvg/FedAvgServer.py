@@ -14,7 +14,7 @@ from collections import OrderedDict
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 
-class Server(object):
+class FedAvgServer:
     def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup):
         self.wandb_on = wandb_on
         self.num_clients = int(num_clients)
@@ -71,7 +71,7 @@ class Server(object):
         dist.barrier()
 
     def send_local_train_dataset_to_clients(self, train_datasets):
-        printLog(f"PS >> 클라이언트들에게 데이터셋을 분할합니다.")
+        printLog(f"클라이언트들에게 로컬 데이터셋을 분할합니다")
         self.len_local_dataset.append(-1)
         for idx, dataset in enumerate(train_datasets):
             if idx==self.num_clients:
@@ -84,18 +84,7 @@ class Server(object):
                 if(tensor.dtype==torch.int64):
                     tensor=tensor.type(torch.FloatTensor)
                 dist.send(tensor=tensor.contiguous(), dst=idx+1)
-
         dist.barrier()
-
-    """
-
-    def send_num_local_epoch_to_clients(self):
-        printLog(f"PS >> 클라이언트들의 local epoch 수를 지정합니다.")
-        clients_local_epoch=set_num_local_epoch_by_random(self.num_clients, 5, 15)
-        for idx, e in enumerate(clients_local_epoch):
-            dist.send(tensor=torch.tensor([float(e)]), dst=idx+1)
-        dist.barrier()
-    """
 
     def send_global_model_to_clients(self, selected_client_idx):
         flatten_model = TensorBuffer(list(self.model.state_dict().values()))

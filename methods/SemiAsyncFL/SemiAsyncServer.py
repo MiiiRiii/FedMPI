@@ -1,4 +1,4 @@
-from FedAvg import FedAvgServer
+from methods.FedAvg import FedAvgServer
 
 import torch.distributed as dist
 import torch
@@ -7,9 +7,9 @@ import copy
 from utils.model_utils import TensorBuffer
 from utils.utils import printLog
 
-class SemiAsyncServer(FedAvgServer):
-    def __init__(self):
-        None
+class SemiAsyncServer(FedAvgServer.FedAvgServer):
+    def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup):
+        super().__init__(num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup)
 
     def receive_local_model_from_any_clients(self, num_clients, num_local_model_limit):
         upload_success_client_idx=[]

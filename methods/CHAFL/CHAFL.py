@@ -20,7 +20,6 @@ class CHAFL(object):
             req=dist.irecv(tensor=local_loss)
             if cnt<num_selected_clients :
                 req.wait()
-                printLog(f"client {req.source_rank()}의 local loss는 {local_loss.item()}입니다.")
                 local_loss_list[req.source_rank()]=local_loss.item()
                 if local_loss.item()>global_loss:
                     selected_clients_list.append(req.source_rank())
@@ -94,7 +93,6 @@ class CHAFL(object):
                                                
                 # Do minimal quota
                 real_local_epoch = Client.train(currentRoundGroup)
-                printLog(f"CLIENT {Client.id} >> 평균 학습 소요 시간: {Client.total_train_time/Client.num_of_selected}")
                 
                 # Send local model to server
                 Client.send_local_model_to_server()

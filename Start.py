@@ -39,19 +39,19 @@ def init_FL(FLgroup, args):
 
         method=None
         if args.method=="FedAvg":
-            method = FedAvg()
-            Server = FedAvgServer()
-            Client = FedAvgClient()
+            method = FedAvg.FedAvg()
+            Server = FedAvgServer.FedAvgServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            Client = FedAvgClient.FedAvgClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
 
         elif args.method=="CHAFL":
-            method = CHAFL()
-            Server = CHAFLServer()
-            Client = CHAFLClient()
+            method = CHAFL.CHAFL()
+            Server = CHAFLServer.CHAFLServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            Client = CHAFLClient.CHAFLClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
 
         elif args.method=="rpow_d" or args.method=="cpow_d" or args.method=="pow_d":
-            method=PowerOfChoice.powerofchoice(args.method, args.d)
-            Server = PowerOfChoiceServer()
-            Client = PowerOfChoiceClient()
+            method=PowerOfChoice.PowerOfChoice(args.method, args.d)
+            Server = PowerOfChoiceServer.PowerOfChoiceServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            Client = PowerOfChoiceClient.PowerOfChoiceClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
 
 
         if WORLD_RANK == 0:
@@ -68,20 +68,17 @@ def init_FL(FLgroup, args):
                     "d": args.d
                 })
             printLog(f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
-            ps=Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
-
-            ps.setup(args.dataset, args.iid, args.split, args.cluster_type)
+            Server.setup(args.dataset, args.iid, args.split, args.cluster_type)
 
             
-            method.runServer(ps)
+            method.runServer(Server)
             if args.wandb_on == "True":
                 wandb.finish()
         else:
             #torch.set_num_threads(args.omp_num_threads)
             printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
-            client = Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
-            client.setup(args.cluster_type)
-            method.runClient(client)
+            Client.setup(args.cluster_type)
+            method.runClient(Client)
 
         
 def init_process(args, backend='gloo'):

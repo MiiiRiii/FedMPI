@@ -1,7 +1,8 @@
-from FedAvg import FedAvgClient
+from methods.FedAvg import FedAvgClient
 
-class SemiAsynchronousClient(FedAvgClient):
-    def __init__(self):
+class SemiAsynchronousClient(FedAvgClient.FedAvgClient):
+    def __init__(self, num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup):
+        super().__init__(num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup)
         self.num_of_selected=0
         self.model_version=0
 

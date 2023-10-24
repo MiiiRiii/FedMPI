@@ -9,11 +9,15 @@ import torch.distributed as dist
 def omp_num_threads_per_clients(num_clients, dataset_name):
     num_threads=[]
 
-    if dataset_name=="CIFAR10" or dataset_name=="MNIST" or dataset_name=="FashionMNIST":
-        thread_list=[1,2,5] # 1: 10.68s | 2: 6.73s | 3: 5.31s 
+    thread_list=[1,2,5]
 
-    for t in thread_list:
-        num_threads+=[t for idx in range(int(num_clients/len(thread_list)))]
+    cnt=0
+    for idx in range(num_clients):
+        if cnt>=3:
+            cnt=0
+        num_threads.append(thread_list[cnt])
+        cnt+=1
+    
     
     random.shuffle(num_threads)
     return num_threads
