@@ -1,18 +1,23 @@
-from Server import Server
-from Client import Client
+from methods.FedAvg import FedAvg
+from methods.FedAvg import FedAvgClient
+from methods.FedAvg import FedAvgServer
+
+from methods.CHAFL import CHAFL
+from methods.CHAFL import CHAFLClient
+from methods.CHAFL import CHAFLServer
+
+from methods.PowerOfChoice import PowerOfChoice
+from methods.PowerOfChoice import PowerOfChoiceClient
+from methods.PowerOfChoice import PowerOfChoiceServer
+
 from utils.utils import printLog
 
-from methods import FedAvg
-from methods import CHAFL
-from methods import powerofchoice
 
 import torch.distributed as dist
-import torch.multiprocessing as mp
 import os
 import socket
 import wandb
 import argparse
-import time
 import torch
 
 
@@ -34,11 +39,19 @@ def init_FL(FLgroup, args):
 
         method=None
         if args.method=="FedAvg":
-            method = FedAvg.FedAvg()
+            method = FedAvg()
+            Server = FedAvgServer()
+            Client = FedAvgClient()
+
         elif args.method=="CHAFL":
-            method = CHAFL.CHAFL()
+            method = CHAFL()
+            Server = CHAFLServer()
+            Client = CHAFLClient()
+
         elif args.method=="rpow_d" or args.method=="cpow_d" or args.method=="pow_d":
-            method=powerofchoice.powerofchoice(args.method, args.d)
+            method=PowerOfChoice.powerofchoice(args.method, args.d)
+            Server = PowerOfChoiceServer()
+            Client = PowerOfChoiceClient()
 
 
         if WORLD_RANK == 0:
@@ -52,7 +65,7 @@ def init_FL(FLgroup, args):
                     "dataset": args.dataset,
                     "data_split": args.split,
                     "method": args.method,
-                    "d": args.method
+                    "d": args.d
                 })
             printLog(f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
             ps=Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
