@@ -93,7 +93,6 @@ class FedAvgClient:
         loss_function = CrossEntropyLoss()
         dataloader = DataLoader(self.dataset, self.batch_size, shuffle=True)
         
-        
         for e in range(self.local_epoch):
             for data, labels in dataloader:
                 optimizer.zero_grad()

@@ -1,17 +1,9 @@
-from methods.FedAvg import FedAvg
-from methods.FedAvg import FedAvgClient
-from methods.FedAvg import FedAvgServer
-
-from methods.CHAFL import CHAFL
-from methods.CHAFL import CHAFLClient
-from methods.CHAFL import CHAFLServer
-
-from methods.PowerOfChoice import PowerOfChoice
-from methods.PowerOfChoice import PowerOfChoiceClient
-from methods.PowerOfChoice import PowerOfChoiceServer
+from methods.FedAvg import FedAvg, FedAvgClient, FedAvgServer
+from methods.CHAFL import CHAFL, CHAFLClient, CHAFLServer
+from methods.PowerOfChoice import PowerOfChoice, PowerOfChoiceClient, PowerOfChoiceServer
+from methods.SemiAsyncFL import SemiAsync, SemiAsyncClient, SemiAsyncServer
 
 from utils.utils import printLog
-
 
 import torch.distributed as dist
 import os
@@ -49,11 +41,15 @@ def init_FL(FLgroup, args):
             Client = CHAFLClient.CHAFLClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
 
         elif args.method=="rpow_d" or args.method=="cpow_d" or args.method=="pow_d":
-            method=PowerOfChoice.PowerOfChoice(args.method, args.d)
+            method = PowerOfChoice.PowerOfChoice(args.method, args.d)
             Server = PowerOfChoiceServer.PowerOfChoiceServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
             Client = PowerOfChoiceClient.PowerOfChoiceClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
-
-
+        
+        elif args.method=="SemiAsync":
+            method = SemiAsync.SemiAsyncFL()
+            Server = SemiAsyncServer.SemiAsyncServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            Client = SemiAsyncClient.SemiAsyncClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
+        
         if WORLD_RANK == 0:
             if args.wandb_on == "True":
                 wandb.init(project=args.project, entity=args.entity, group=args.group, name=args.name,
@@ -111,7 +107,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--cluster_type", choices=['WISE', 'KISTI'], type=str)
 
-    parser.add_argument("--num_threads", type=str)
+
     
     args=parser.parse_args()
     init_process(args)
