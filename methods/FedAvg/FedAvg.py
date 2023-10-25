@@ -10,23 +10,6 @@ class FedAvg(object):
     def __init__(self):
         None
 
-    def calculate_coefficient(self, selected_client_idx, Server):
-
-        coefficient={}
-        sum=0
-        for idx in selected_client_idx:
-            coefficient[idx]=Server.len_local_dataset[idx]
-            sum+=Server.len_local_dataset[idx]
-        
-        for idx in selected_client_idx:
-            coefficient[idx]=coefficient[idx]/sum
-
-        return coefficient
-    
-    def client_select_randomly(self, clients_idx, num_selected_clients):
-        shuffled_clients_idx = clients_idx[:]
-        random.shuffle(shuffled_clients_idx)
-        return shuffled_clients_idx[0:num_selected_clients]
     
     def runClient(self, Client):
         while True:
@@ -58,7 +41,8 @@ class FedAvg(object):
         
         while True:
             current_round_start=time.time()
-            selected_client_idx = self.client_select_randomly(clients_idx, int(Server.selection_ratio * Server.num_clients))
+            
+            selected_client_idx = Server.client_select_randomly(clients_idx, int(Server.selection_ratio * Server.num_clients))
             printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=Server.FLgroup)
 
@@ -66,7 +50,7 @@ class FedAvg(object):
             
             Server.receive_local_model_from_selected_clients(selected_client_idx)
 
-            coefficient=self.calculate_coefficient(selected_client_idx, Server)
+            coefficient=Server.calculate_coefficient(selected_client_idx, Server)
 
             Server.average_aggregation(selected_client_idx, coefficient)
 

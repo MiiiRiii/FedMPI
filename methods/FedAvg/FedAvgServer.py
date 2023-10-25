@@ -140,3 +140,21 @@ class FedAvgServer:
                     averaged_weights[key] += coefficient[client_idx] * local_weights[key]
 
         self.model.load_state_dict(averaged_weights)
+
+    def calculate_coefficient(self, selected_client_idx):
+
+        coefficient={}
+        sum=0
+        for idx in selected_client_idx:
+            coefficient[idx]=self.len_local_dataset[idx]
+            sum+=self.len_local_dataset[idx]
+        
+        for idx in selected_client_idx:
+            coefficient[idx]=coefficient[idx]/sum
+
+        return coefficient
+
+    def client_select_randomly(self, clients_idx, num_selected_clients):
+        shuffled_clients_idx = clients_idx[:]
+        random.shuffle(shuffled_clients_idx)
+        return shuffled_clients_idx[0:num_selected_clients]
