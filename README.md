@@ -34,5 +34,5 @@ Start.py \
 --cluster_type=(if you want to arbitrarily adjust the number of omp threads for each client, use "WISE". If you want to automatically adjust the number of omp threads, use "KISTI")
 
 Example) 
-$ torchrun --nnodes=6 --nproc_per_node=6 --node_rank=5 --rdzv_id=0 --rdzv_endpoint=wise167:29603 --master_addr=wise167 --master_port=29603 FedAvg.py --selection_ratio=0.1 --round=1000 --batch_size=32 --local_epochs=5 --lr=0.001 --target_acc=0.7 --dataset=CIFAR10 --iid=False --split=gaussian --method=FeAvg --wandb_on=False --repeat=1 --cluster_type=WISE
+$ torchrun --nnodes=6 --nproc_per_node=6 --node_rank=5 --rdzv_id=0 --rdzv_endpoint=wise167:29603 --master_addr=wise167 --master_port=29603 Start.py --selection_ratio=0.1 --round=1000 --batch_size=32 --local_epochs=5 --lr=0.001 --target_acc=0.7 --dataset=CIFAR10 --iid=False --split=gaussian --method=FeAvg --wandb_on=False --repeat=1 --cluster_type=WISE
 
