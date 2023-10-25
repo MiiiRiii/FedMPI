@@ -50,7 +50,7 @@ class FedAvg(object):
             
             Server.receive_local_model_from_selected_clients(selected_client_idx)
 
-            coefficient=Server.calculate_coefficient(selected_client_idx, Server)
+            coefficient=Server.calculate_coefficient(selected_client_idx)
 
             Server.average_aggregation(selected_client_idx, coefficient)
 

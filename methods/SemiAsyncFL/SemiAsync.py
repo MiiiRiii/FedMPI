@@ -34,7 +34,7 @@ class SemiAsync(object):
                     req.wait()
             
             Server.refine_received_local_model(upload_success_client_idx, local_model_version)
-            coefficient = Server.calculate_coefficient(upload_success_client_idx, Server)
+            coefficient = Server.calculate_coefficient(upload_success_client_idx)
             Server.average_aggregation(upload_success_client_idx, coefficient)
 
             global_acc, global_loss = Server.evaluate()

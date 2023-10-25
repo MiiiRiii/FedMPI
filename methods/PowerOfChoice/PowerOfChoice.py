@@ -8,7 +8,7 @@ import time
 # Only implement pow-d, cpow-d
 # Not implement rpow-d
 
-class powerofchoice(object):
+class PowerOfChoice(object):
 
     def __init__(self, method, d):
         self.method = method
@@ -33,16 +33,12 @@ class powerofchoice(object):
                 
                 # get local loss
                 Client.receive_global_model_from_server()
-                if self.method =="pow_d":
-                    local_loss = Client.evaluate()
-                elif self.method == "cpow_d":
-                    local_loss = Client.evaluate(method="cpow_d")
-                
+                local_loss = Client.evaluate(method=self.method)
                 
                 req = dist.isend(tensor=torch.tensor([local_loss]), dst=0)
                 req.wait()
 
-                # check if i am the selected client
+                # check whether i am the selected client
                 selected=False
                 selected_clients=torch.zeros(Client.num_selected_clients).type(torch.int64)
                 dist.broadcast(tensor=selected_clients, src=0, group=candidate_clients_group)
@@ -56,7 +52,6 @@ class powerofchoice(object):
                 # when i am a selected client
                 if(selected):
                     Client.train()
-                    printLog(f"CLIENT {Client.id} >> 평균 학습 소요 시간: {Client.total_train_time/Client.num_of_selected}")
                     Client.send_local_model_to_server()
 
             dist.barrier()
@@ -76,19 +71,18 @@ class powerofchoice(object):
             candidate_clients = random.sample(clients_idx, self.d)
             dist.broadcast(tensor=torch.tensor(candidate_clients), src=0, group=Server.FLgroup)
             new_group_list = candidate_clients+[0]
-            print(new_group_list)
             candidate_clients_group = dist.new_group(candidate_clients+[0], backend="gloo")
 
             # select clients
             Server.send_global_model_to_clients(candidate_clients)
-            selected_client_idx = self.client_select_pow_d(self.d, int(Server.selection_ratio * Server.num_clients))
+            selected_client_idx = Server.client_select_pow_d(self.d, int(Server.selection_ratio * Server.num_clients))
             printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=candidate_clients_group)
             dist.destroy_process_group(candidate_clients_group)
             
             # receive local models and aggregation
             Server.receive_local_model_from_selected_clients(selected_client_idx)
-            coefficient=self.calculate_coefficient(selected_client_idx, Server)
+            coefficient=Server.calculate_coefficient(selected_client_idx)
             Server.average_aggregation(selected_client_idx, coefficient)
             global_acc, global_loss = Server.evaluate()
             Server.current_round+=1

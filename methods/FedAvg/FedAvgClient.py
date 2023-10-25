@@ -43,6 +43,8 @@ class FedAvgClient:
         
         # receive train dataset 
         self.receive_local_train_dataset_from_server()
+
+        dist.barrier()
         
         if cluster_type == "WISE":
             self.receive_omp_num_threads_from_server()
@@ -79,8 +81,6 @@ class FedAvgClient:
         self.dataset = applyCustomDataset(self.dataset_name, data, label)
 
         printLog(f"CLIENT {self.id} >> 로컬데이터셋을 받았습니다.")
-        
-        dist.barrier()
 
 
     def train(self):

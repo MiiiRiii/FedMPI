@@ -66,7 +66,7 @@ class CHAFLServer(FedAvgServer.FedAvgServer):
 
         local_epoch_coefficient={}
         for idx in selected_client_idx:
-            local_epoch_coefficient[idx]=(1-(selected_client_squared_local_epoch[idx]/sum_squared_local_epoch))/(int(Server.selection_ratio * Server.num_clients)-1)
+            local_epoch_coefficient[idx]=(1-(selected_client_squared_local_epoch[idx]/sum_squared_local_epoch))/(int(self.selection_ratio * self.num_clients)-1)
 
         data_coefficient={}
         sum_local_data=0

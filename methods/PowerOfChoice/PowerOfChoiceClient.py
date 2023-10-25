@@ -17,19 +17,19 @@ class PowerOfChoiceClient(FedAvgClient.FedAvgClient):
         super().__init__(num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup)
 
     def receive_local_train_dataset_from_server(self):
-        super().receive_global_model_from_server()
+        super().receive_local_train_dataset_from_server()
         
         self.unique_labels, self.labels_probabilities = get_local_datasets_labels_probabilities(self.dataset)
         self.num_iteration = len(self.dataset)/self.batch_size
-        
-        dist.barrier()
 
     def evaluate(self, method="None"):
         if method == "cpow_d":
             uniform_random_labels = create_uniform_labels(list(self.unique_labels), self.labels_probabilities, self.batch_size)
             uniform_mini_batch = get_uniform_mini_batch(self.dataset_name, self.dataset, uniform_random_labels, self.batch_size)
             dataloader = DataLoader(uniform_mini_batch, self.batch_size)
-        
+        else:
+            dataloader = DataLoader(self.dataset, self.batch_size)
+            
         self.model.eval()
         loss_function = CrossEntropyLoss()
         test_loss, correct = 0, 0

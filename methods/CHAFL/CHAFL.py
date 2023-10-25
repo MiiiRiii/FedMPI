@@ -72,7 +72,7 @@ class CHAFL(object):
             Server.receive_local_model_from_selected_clients(selected_client_idx)
             dist.destroy_process_group(currentRoundGroup)
 
-            coefficient = Server.calculate_coefficient(selected_client_idx, Server)
+            coefficient = Server.calculate_coefficient(selected_client_idx)
             for idx in selected_client_idx:
                 printLog(f"PS >> CLIENT {idx}의 coefficient는 {coefficient[idx]}입니다.")
 
