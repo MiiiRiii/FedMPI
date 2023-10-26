@@ -13,11 +13,13 @@ from torch.utils.data import DataLoader
 class SemiAsyncServer(FedAvgServer.FedAvgServer):
     def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup):
         super().__init__(num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup)
-        self.local_model_version = [0 for idx in range(0,self.num_clients+1)] 
+        self.local_model_version = [0 for idx in range(0,self.num_clients+1)]
+        self.cached_client_idx = []
+        self.num_cached_local_model = 0
             
-
+    """
     def receive_local_model_from_any_clients(self, num_clients, num_local_model_limit):
-        upload_success_client_idx=[]
+        picked_client_idx=[]
         remain_res=[]
         cnt=0
         for idx in range(num_clients):
@@ -28,16 +30,42 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
                 self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
                 printLog(f"Server >> CLIENT {req.source_rank()}에게 local model을 받음")
                 cnt=cnt+1
-                upload_success_client_idx.append(req.source_rank())
+                picked_client_idx.append(req.source_rank())
             else:
                 remain_res.append(req)
         
-        return upload_success_client_idx, remain_res
+        return picked_client_idx, remain_res
+    """
+
+    def receive_local_model_from_any_clients(self):
+        while True:
+            temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
+            req = dist.irecv(tensor=temp_local_model.buffer)
+            req.wait()
+            self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
+            self.cached_client_idx.append(req.source_rank())
+            self.num_cached_local_model += 1
+
+    def wait_until_can_update_global_model(self, num_local_model_limit):
+        printLog(f"SERVER >> 현재까지 받은 로컬 모델 개수: {self.num_cached_local_model}")
+        while True:
+            if self.num_cached_local_model == num_local_model_limit:
+                break
+        
+        self.num_cached_local_model -= num_local_model_limit
+        
+        picked_client_idx = []
+
+        for idx in range(num_local_model_limit):
+            picked_client_idx.append(self.cached_client_idx.pop(0))
     
-    def refine_received_local_model(self, upload_success_client_idx): 
+        return picked_client_idx
+            
+
+    def refine_received_local_model(self, picked_client_idx): 
         decay_coefficient = 0.9
 
-        for idx in upload_success_client_idx:
+        for idx in picked_client_idx:
             staleness = self.current_round - self.local_model_version[idx]
             local_coefficient = decay_coefficient**(staleness)
             local_model = self.model_controller.Model()
@@ -56,10 +84,10 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
 
             self.flatten_client_models[idx] = TensorBuffer(list(interpolated_weights.values()))
     """
-    def calculate_coefficient(self, upload_success_client_idx):
+    def calculate_coefficient(self, picked_client_idx):
 
         coefficient={}
-        for idx in upload_success_client_idx : 
+        for idx in picked_client_idx : 
             coefficient[idx] = self.len_local_dataset[idx] / self.len_total_local_dataset
         
         return coefficient

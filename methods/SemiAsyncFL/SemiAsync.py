@@ -21,29 +21,25 @@ class SemiAsync(object):
     def runServer(self, Server):
         current_FL_start = time.time()
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
-        upload_success_client_idx=clients_idx # 학습 처음엔 모든 클라이언트에게 보냄
+        picked_client_idx =clients_idx # 학습 처음엔 모든 클라이언트에게 보냄
         num_local_model_limit=int(Server.num_clients*Server.selection_ratio) # 한 라운드 동안 수신할 local model 최대 개수
 
+        listen_local_update = threading.Thread(target=Server.receive_local_model_from_any_clients, args=(), daemon=True)
+        listen_local_update.start()
         # FL 프로세스 시작
         while True:
             Server.current_round+=1
             
             current_round_start=time.time()
 
-            Server.send_global_model_to_clients(upload_success_client_idx)
+            Server.send_global_model_to_clients(picked_client_idx )
 
-            upload_success_client_idx, remain_reqs = Server.receive_local_model_from_any_clients(Server.num_clients, num_local_model_limit)
+            picked_client_idx  = Server.wait_until_can_update_global_model(num_local_model_limit)
 
-            #for idx in upload_success_client_idx:
-                #Server.evaluate_local_model(idx)
+            Server.refine_received_local_model(picked_client_idx )            
 
-            other_clients_sending = threading.Thread(target=self.remain_req, args=(remain_reqs,), daemon=True)
-            other_clients_sending.start()
-
-            Server.refine_received_local_model(upload_success_client_idx)            
-
-            coefficient = Server.calculate_coefficient(upload_success_client_idx)
-            Server.average_aggregation(upload_success_client_idx, coefficient)
+            coefficient = Server.calculate_coefficient(picked_client_idx )
+            Server.average_aggregation(picked_client_idx , coefficient)
 
             global_acc, global_loss = Server.evaluate()
 
