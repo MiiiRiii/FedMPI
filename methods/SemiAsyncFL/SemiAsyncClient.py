@@ -1,4 +1,5 @@
 from methods.FedAvg import FedAvgClient
+from utils.utils import *
 
 import torch.distributed as dist
 
@@ -13,6 +14,8 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
     def receive_global_model_from_server(self):
         super().receive_global_model_from_server()
         
-        global_model_version = torch.zeros(1)
+        global_model_version = torch.tensor(self.local_model_version).type(torch.FloatTensor)
         dist.recv(tensor=global_model_version, src=0)
         self.local_model_version = global_model_version.item()
+
+        printLog(f"CLIENT {self.id} >> 로컬 모델 버전 : {int(self.local_model_version)}")

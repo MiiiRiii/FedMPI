@@ -5,6 +5,7 @@ import time
 from torch.utils.data import DataLoader
 from torch.optim import SGD
 from torch.nn import CrossEntropyLoss
+from tqdm import tqdm
 
 
 from utils.utils import printLog
