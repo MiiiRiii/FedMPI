@@ -7,7 +7,7 @@ How to run:
 2. Enter the following command on the node.
 $ torchrun \
 --nnodes=(number of nodes to use) \
---nproc_per_node=(number of processes to use per node) \
+--nproc_per_node=(Number of processes to use on this node) \
 --node_rank=(Global rank of the node executing this command) \
 --rdzv_id=0 \
 --rdzv_endpoint=(IP address of the node where the server/master process is located):(Port number to communicate with server/master process) \
