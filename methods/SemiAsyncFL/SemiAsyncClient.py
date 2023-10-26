@@ -12,10 +12,16 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
         self.local_model_version=0
     
     def receive_global_model_from_server(self):
-        super().receive_global_model_from_server()
-        
         global_model_version = torch.tensor(self.local_model_version).type(torch.FloatTensor)
         dist.recv(tensor=global_model_version, src=0)
-        self.local_model_version = global_model_version.item()
+        
+        if global_model_version.item() == -1:
+            return 0
+        
+        else :
+            self.local_model_version = global_model_version.item()
 
-        printLog(f"CLIENT {self.id} >> 로컬 모델 버전 : {int(self.local_model_version)}")
+            printLog(f"CLIENT {self.id} >> 로컬 모델 버전 : {int(self.local_model_version)}")
+            super().receive_global_model_from_server()
+            return 1
+        

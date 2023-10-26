@@ -8,15 +8,15 @@ class SemiAsync(object):
     def __init__(self):
         None
     
-    def remain_req(self, remain_reqs):
-        for req in remain_reqs:
-            req.wait()
-
     def runClient(self, Client):
         while True:
-            Client.receive_global_model_from_server()
+            isTerminate = Client.receive_global_model_from_server()
+            if isTerminate == 0 :
+                printLog(f"CLIENT{Client.id} >> FL 프로세스를 종료합니다.")
+                break
             Client.train()
             Client.send_local_model_to_server()
+        dist.barrier()
             
     def runServer(self, Server):
         current_FL_start = time.time()
@@ -32,7 +32,7 @@ class SemiAsync(object):
             
             current_round_start=time.time()
 
-            Server.send_global_model_to_clients(picked_client_idx )
+            Server.send_global_model_to_clients(picked_client_idx)
 
             picked_client_idx  = Server.wait_until_can_update_global_model(num_local_model_limit)
 
@@ -48,3 +48,16 @@ class SemiAsync(object):
             if Server.wandb_on=="True":
                 wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-current_round_start, "wall_time(m)":(time.time()-current_FL_start)/60})
             
+            if global_acc>=Server.target_accuracy:
+                printLog(f"PS >> 목표한 정확도에 도달했으며, 수행한 라운드 수는 {Server.current_round}회 입니다.")
+                for idx in clients_idx:
+                    dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
+                
+                break
+            
+            elif Server.current_round == Server.target_rounds:
+                printLog(f"PS >> 목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
+                for idx in clients_idx:
+                    dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
+                break
+        dist.barrier()

@@ -71,7 +71,6 @@ def init_FL(FLgroup, args):
             if args.wandb_on == "True":
                 wandb.finish()
         else:
-            #torch.set_num_threads(args.omp_num_threads)
             printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
             Client.setup(args.cluster_type)
             method.runClient(Client)

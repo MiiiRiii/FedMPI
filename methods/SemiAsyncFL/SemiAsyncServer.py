@@ -49,7 +49,7 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
     def wait_until_can_update_global_model(self, num_local_model_limit):
         printLog(f"SERVER >> 현재까지 받은 로컬 모델 개수: {self.num_cached_local_model}")
         while True:
-            if self.num_cached_local_model == num_local_model_limit:
+            if self.num_cached_local_model >= num_local_model_limit:
                 break
         
         self.num_cached_local_model -= num_local_model_limit
@@ -95,8 +95,8 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
     def send_global_model_to_clients(self, sucess_uploaded_client_idx):
         flatten_model = TensorBuffer(list(self.model.state_dict().values()))
         for idx in sucess_uploaded_client_idx:
-            dist.send(tensor=flatten_model.buffer, dst=idx) # 글로벌 모델 전송
             dist.send(tensor=torch.tensor(self.current_round).type(torch.FloatTensor), dst=idx) # 모델 버전 전송
+            dist.send(tensor=flatten_model.buffer, dst=idx) # 글로벌 모델 전송
             self.local_model_version[idx]=self.current_round
 
     def evaluate_local_model(self, client_idx):
