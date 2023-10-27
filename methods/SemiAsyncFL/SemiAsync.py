@@ -24,7 +24,8 @@ class SemiAsync(object):
         picked_client_idx =clients_idx # 학습 처음엔 모든 클라이언트에게 보냄
         num_local_model_limit=int(Server.num_clients*Server.selection_ratio) # 한 라운드 동안 수신할 local model 최대 개수
 
-        listen_local_update = threading.Thread(target=Server.receive_local_model_from_any_clients, args=(), daemon=True)
+        event=threading.Event()
+        listen_local_update = threading.Thread(target=Server.receive_local_model_from_any_clients, args=(event,), daemon=True)
         listen_local_update.start()
         # FL 프로세스 시작
         while True:
@@ -60,4 +61,5 @@ class SemiAsync(object):
                 for idx in clients_idx:
                     dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
                 break
+        event.set()
         dist.barrier()

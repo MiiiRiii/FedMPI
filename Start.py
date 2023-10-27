@@ -75,6 +75,9 @@ def init_FL(FLgroup, args):
             Client.setup(args.cluster_type)
             method.runClient(Client)
 
+        del Server
+        del Client
+        del method
         
 def init_process(args, backend='gloo'):
     FLgroup = dist.init_process_group(backend, rank=WORLD_RANK, world_size=WORLD_SIZE, init_method=f'tcp://{MASTER_ADDR}:{MASTER_PORT}')
