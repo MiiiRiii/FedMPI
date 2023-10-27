@@ -47,10 +47,7 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
             printLog(f"SERVER >> CLIENT{req.source_rank()}에게 로컬 모델을 받음")
             self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
             self.cached_client_idx.append(req.source_rank())
-            for idx in self.cached_client_idx:
-                print(idx)
             self.num_cached_local_model += 1
-            printLog(f"SERVER >> 캐시해놓은 로컬 모델 개수 : {len(self.cached_client_idx)}")
 
     def wait_until_can_update_global_model(self, num_local_model_limit):
         printLog(f"SERVER >> 현재까지 받은 로컬 모델 개수: {self.num_cached_local_model}")
