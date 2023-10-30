@@ -4,6 +4,11 @@ from utils.utils import *
 import torch.distributed as dist
 
 import torch
+import time
+
+from torch.utils.data import DataLoader
+from torch.optim import SGD
+from torch.nn import CrossEntropyLoss
 
 class SemiAsyncClient(FedAvgClient.FedAvgClient):
     def __init__(self, num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup):
@@ -25,3 +30,56 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
             super().receive_global_model_from_server()
             return 1
         
+    def train(self):
+        printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
+
+        start=time.time()
+
+        self.model.train()
+        optimizer = SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
+        loss_function = CrossEntropyLoss()
+        dataloader = DataLoader(self.dataset, self.batch_size, shuffle=True)
+
+        ########## oort ##########
+        epoch_train_loss = None
+        loss_decay = 0.2
+        ##########################
+
+        for e in range(self.local_epoch):
+            for data, labels in dataloader:
+                optimizer.zero_grad()
+                outputs = self.model.forward(data)
+                loss = loss_function(outputs, labels)
+                
+                ########## oort ##########
+                temp_loss = 0.
+                loss_cnt = 1.
+
+                loss_list = loss.tolist()
+                for l in loss_list:
+                    temp_loss += l**2
+
+                loss_cnt = len(loss_list)
+
+                temp_loss = temp_loss/float(loss_cnt)
+
+                if e==1: # only measure the loss of the first epoch
+                    if epoch_train_loss is None:
+                        epoch_train_loss = temp_loss
+                    else:
+                        epoch_train_loss = (1. - loss_decay) * epoch_train_loss + loss_decay * temp_loss
+                ##########################
+
+                loss.backward()
+                optimizer.step()
+            printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
+
+        self.total_train_time += time.time()-start
+
+        return epoch_train_loss
+    
+    def terminate(self):
+        # 클라이언트 1이 대표로 실행
+        if self.id == 1:
+            self.send_local_model_to_server()
+            

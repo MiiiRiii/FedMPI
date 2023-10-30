@@ -93,7 +93,7 @@ class FedAvgClient:
         optimizer = SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
         loss_function = CrossEntropyLoss()
         dataloader = DataLoader(self.dataset, self.batch_size, shuffle=True)
-        
+
         for e in range(self.local_epoch):
             for data, labels in dataloader:
                 optimizer.zero_grad()

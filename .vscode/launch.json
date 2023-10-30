@@ -1,0 +1,39 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "module": "torch.distributed.run",
+            "request": "launch",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--nnodes", "6",
+                "--nproc_per_node", "1",
+                "--node_rank", "0",
+                "--rdzv_id", "0",
+                "--rdzv_endpoint", "210.107.197.167:29603",
+                "--master_addr", "210.107.197.167",
+                "--master_port", "29603",
+                "Start.py",
+                "--selection_ratio", "0.5",
+                "--round", "3",
+                "--batch_size", "32",
+                "--local_epochs", "5",
+                "--lr", "0.01",
+                "--target_acc", "1",
+                "--dataset=MNIST", 
+                "--iid", "False",
+                "--split", "gaussian",
+                "--method", "SemiAsync",
+                "--wandb_on", "False",
+                "--repeat", "5",
+                "--cluster_type", "WISE",
+            ]
+        }
+    ]
+}

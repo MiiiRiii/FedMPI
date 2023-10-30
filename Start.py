@@ -11,6 +11,7 @@ import socket
 import wandb
 import argparse
 import torch
+import gc
 
 
 MASTER_ADDR = os.environ['MASTER_ADDR']
@@ -78,6 +79,7 @@ def init_FL(FLgroup, args):
         del Server
         del Client
         del method
+        gc.collect()
         
 def init_process(args, backend='gloo'):
     FLgroup = dist.init_process_group(backend, rank=WORLD_RANK, world_size=WORLD_SIZE, init_method=f'tcp://{MASTER_ADDR}:{MASTER_PORT}')

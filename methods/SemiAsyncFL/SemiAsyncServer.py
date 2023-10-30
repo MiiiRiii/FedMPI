@@ -5,6 +5,8 @@ from utils.utils import printLog
 import torch.distributed as dist
 import torch
 import copy
+import threading
+import gc
 
 from collections import OrderedDict
 from torch.nn import CrossEntropyLoss
@@ -16,53 +18,43 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
         self.local_model_version = [0 for idx in range(0,self.num_clients+1)]
         self.cached_client_idx = []
         self.num_cached_local_model = 0
-            
-    """
-    def receive_local_model_from_any_clients(self, num_clients, num_local_model_limit):
-        picked_client_idx=[]
-        remain_res=[]
-        cnt=0
-        for idx in range(num_clients):
-            temp_local_model =TensorBuffer(list(self.model.state_dict().values()))
-            req = dist.irecv(tensor=temp_local_model.buffer)
-            if cnt < num_local_model_limit:
-                req.wait()
-                self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
-                printLog(f"Server >> CLIENT {req.source_rank()}에게 local model을 받음")
-                cnt=cnt+1
-                picked_client_idx.append(req.source_rank())
-            else:
-                remain_res.append(req)
-        
-        return picked_client_idx, remain_res
-    """
+        self.cached_client_idx_lock = threading.Lock()
+        self.num_cached_local_model_lock = threading.Lock()
+        self.terminate_FL = threading.Event()
+        self.terminate_FL.clear()
 
-    def receive_local_model_from_any_clients(self, event):
-        while True:
-            if event.is_set():
-                break
+    def receive_local_model_from_any_clients(self):
+        while not self.terminate_FL.is_set():
             temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
             req = dist.irecv(tensor=temp_local_model.buffer)
             req.wait()
+            if self.terminate_FL.is_set():
+                break
             printLog(f"SERVER >> CLIENT{req.source_rank()}에게 로컬 모델을 받음")
             self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
-            self.cached_client_idx.append(req.source_rank())
-            self.num_cached_local_model += 1
+            with self.cached_client_idx_lock and self.num_cached_local_model_lock:
+                self.cached_client_idx.append(req.source_rank())
+                self.num_cached_local_model += 1
+
+        printLog(f"SERVER >> 스레드를 종료합니다.")
 
     def wait_until_can_update_global_model(self, num_local_model_limit):
         printLog(f"SERVER >> 현재까지 받은 로컬 모델 개수: {self.num_cached_local_model}")
         while True:
-            if self.num_cached_local_model >= num_local_model_limit:
-                printLog(f"SERVER >> aggregation 가능")
-                break
-        
-        self.num_cached_local_model -= num_local_model_limit
-        
-        picked_client_idx = []
+            with self.cached_client_idx_lock and self.num_cached_local_model_lock:
+                if self.num_cached_local_model >= num_local_model_limit:
 
-        for idx in range(num_local_model_limit):
-            picked_client_idx.append(self.cached_client_idx.pop(0))
-    
+                    self.num_cached_local_model -= num_local_model_limit
+                    picked_client_idx = []
+                    
+                    for idx in range(num_local_model_limit):
+                        picked_client_idx.append(self.cached_client_idx.pop(0))
+
+                    
+                    printLog(f"SERVER >> picked client list : {picked_client_idx}")
+                    
+                    break
+
         return picked_client_idx
             
 
@@ -129,4 +121,6 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
 
         printLog(f"Server >> CLIENT{client_idx}의 로컬 모델 평가 결과 : acc=>{test_accuracy}, test_loss=>{test_loss}")
 
-
+    def terminate(self):
+        self.terminate_FL.set()
+        dist.send(tensor=torch.tensor(0).type(torch.FloatTensor), dst=1)

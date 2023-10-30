@@ -16,6 +16,8 @@ class SemiAsync(object):
                 break
             Client.train()
             Client.send_local_model_to_server()
+
+        Client.terminate()
         dist.barrier()
             
     def runServer(self, Server):
@@ -24,8 +26,7 @@ class SemiAsync(object):
         picked_client_idx =clients_idx # 학습 처음엔 모든 클라이언트에게 보냄
         num_local_model_limit=int(Server.num_clients*Server.selection_ratio) # 한 라운드 동안 수신할 local model 최대 개수
 
-        event=threading.Event()
-        listen_local_update = threading.Thread(target=Server.receive_local_model_from_any_clients, args=(event,), daemon=True)
+        listen_local_update = threading.Thread(target=Server.receive_local_model_from_any_clients, args=(), daemon=True)
         listen_local_update.start()
         # FL 프로세스 시작
         while True:
@@ -44,22 +45,26 @@ class SemiAsync(object):
 
             global_acc, global_loss = Server.evaluate()
 
-            printLog(f"PS >> {Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
+            printLog(f"SERVER >> {Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
 
             if Server.wandb_on=="True":
                 wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-current_round_start, "wall_time(m)":(time.time()-current_FL_start)/60})
             
             if global_acc>=Server.target_accuracy:
-                printLog(f"PS >> 목표한 정확도에 도달했으며, 수행한 라운드 수는 {Server.current_round}회 입니다.")
+                printLog(f"SERVER >> 목표한 정확도에 도달했으며, 수행한 라운드 수는 {Server.current_round}회 입니다.")
+                printLog(f"SERVER >> 마무리 중입니다..")
                 for idx in clients_idx:
                     dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
                 
                 break
             
             elif Server.current_round == Server.target_rounds:
-                printLog(f"PS >> 목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
+                printLog(f"SERVER >> 목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
+                printLog(f"SERVER >> 마무리 중입니다..")
                 for idx in clients_idx:
                     dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
                 break
-        event.set()
+        
+        Server.terminate()
+        printLog(f"SERVER >> FL 프로세스를 종료합니다.")
         dist.barrier()
