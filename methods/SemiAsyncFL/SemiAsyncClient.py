@@ -29,7 +29,7 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
             printLog(f"CLIENT {self.id} >> 로컬 모델 버전 : {int(self.local_model_version)}")
             super().receive_global_model_from_server()
             return 1
-        
+    """
     def train(self):
         printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
 
@@ -77,9 +77,13 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
         self.total_train_time += time.time()-start
 
         return epoch_train_loss
+    """
     
     def terminate(self):
         # 클라이언트 1이 대표로 실행
         if self.id == 1:
-            self.send_local_model_to_server()
+            isTerminate = torch.tensor(1).type(torch.FloatTensor)
+            dist.recv(tensor = isTerminate, src=0)
+            if isTerminate == 0:
+                self.send_local_model_to_server()
             
