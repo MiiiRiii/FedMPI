@@ -5,17 +5,18 @@ import torch.distributed as dist
 
 import torch
 import time
+import math
 
 from torch.utils.data import DataLoader
 from torch.optim import SGD
 from torch.nn import CrossEntropyLoss
-from torch.nn import NLLLoss
 
 class SemiAsyncClient(FedAvgClient.FedAvgClient):
     def __init__(self, num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup):
         super().__init__(num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup)
         self.num_of_selected=0
         self.local_model_version=0
+        self.len_local_dataset = len(dataset)
     
     def receive_global_model_from_server(self):
         global_model_version = torch.tensor(self.local_model_version).type(torch.FloatTensor)
@@ -49,9 +50,10 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
         ##########################
         """
 
-        ########## ASFL ##########
-        epoch_train_loss = None
-        loss_function = NLLLoss()
+        ########## my ##########
+        loss_function = CrossEntropyLoss()
+        epoch_train_loss = 0.0
+        ########################
 
         for e in range(self.local_epoch):
             for data, labels in dataloader:
@@ -79,18 +81,24 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
                 loss.mean().backward()
                 ##########################
                 """
-                ########## ASFL ##########
+
+                ########## my ##########
+                if e==1:
+                    epoch_train_loss += loss.detach().item()
                 loss.backward()
-                epoch_train_loss = loss.detach().item()*len(data)
-                ##########################
+                ########################
 
                 
                 optimizer.step()
             printLog(f"CLIENT {self.id}", f"{e+1} epoch을 수행했습니다.")
-        self.total_train_time += time.time()-start
-        printLog(f"CLIENT {self.id}", f"epoch train loss: {epoch_train_loss}")
 
-        return epoch_train_loss
+        self.total_train_time += time.time()-start
+
+        utility = math.sqrt(epoch_train_loss / self.len_local_dataset) * self.len_local_dataset
+
+        printLog(f"CLIENT {self.id}", f"local utility: {utility}")
+
+        return utility
     
     
     def terminate(self):
