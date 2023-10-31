@@ -30,7 +30,7 @@ class FedAvgClient:
 
     
     def setup(self, cluster_type):
-        printLog(f"CLIENT {self.id} >> 빈 모델을 생성합니다.")
+        printLog(f"CLIENT {self.id}", "빈 모델을 생성합니다.")
         if(self.dataset_name == "CIFAR10"):
             self.model_controller = CNN_Cifar10
         elif(self.dataset_name == "MNIST"):
@@ -54,18 +54,9 @@ class FedAvgClient:
         tensor=torch.zeros(1)
         dist.recv(tensor=tensor, src=0)
         torch.set_num_threads(int(tensor.item()))
-        printLog(f"CLIENT {self.id} >> thread {int(tensor.item())}개를 사용합니다.")
+        printLog(f"CLIENT {self.id}", f"thread {int(tensor.item())}개를 사용합니다.")
         dist.barrier()
-    
-    """
-    def receive_num_local_epoch_from_server(self):
-        tensor = torch.zeros(1)
-        dist.recv(tensor=tensor, src=0)
-        self.local_epoch = int(tensor.item())
-        printLog(f"CLIENT {self.id} >> local epoch 수는 {self.local_epoch}입니다.")
-        dist.barrier()
-    """
-    
+
     def receive_local_train_dataset_from_server(self):
 
         train_data_shape = torch.zeros(4)
@@ -81,11 +72,11 @@ class FedAvgClient:
 
         self.dataset = applyCustomDataset(self.dataset_name, data, label)
 
-        printLog(f"CLIENT {self.id} >> 로컬데이터셋을 받았습니다.")
+        printLog(f"CLIENT {self.id}", "로컬데이터셋을 받았습니다.")
 
 
     def train(self):
-        printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
+        printLog(f"CLIENT {self.id}", "로컬 학습을 시작합니다.")
 
         start=time.time()
 
@@ -101,7 +92,7 @@ class FedAvgClient:
                 loss = loss_function(outputs, labels)
                 loss.backward()
                 optimizer.step()
-            printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
+            printLog(f"CLIENT {self.id}", f"{e+1} epoch을 수행했습니다.")
 
         self.total_train_time += time.time()-start
     

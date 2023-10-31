@@ -267,7 +267,7 @@ def get_dataset_index_by_gaussian(len_training_dataset, num_clients, mean, std):
 
     result.append(len_training_dataset-current_allocated_amount)
 
-    printLog(f"각 client들이 가져갈 data 개수 = {result}")
+    printLog("SERVER", f"각 client들이 가져갈 data 개수 = {result}")
     return result
 
 def positive_int_gauss_random(mean, std):

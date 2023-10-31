@@ -12,7 +12,8 @@ class SemiAsync(object):
         while True:
             isTerminate = Client.receive_global_model_from_server()
             if isTerminate == 0 :
-                printLog(f"CLIENT{Client.id} >> FL 프로세스를 종료합니다.")
+                printLog(f"CLIENT{Client.id}", "FL 프로세스를 종료합니다.")
+
                 break
             Client.train()
             Client.send_local_model_to_server()
@@ -45,26 +46,26 @@ class SemiAsync(object):
 
             global_acc, global_loss = Server.evaluate()
 
-            printLog(f"SERVER >> {Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
+            printLog("SERVER", f"{Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
 
             if Server.wandb_on=="True":
                 wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-current_round_start, "wall_time(m)":(time.time()-current_FL_start)/60})
             
             if global_acc>=Server.target_accuracy:
-                printLog(f"SERVER >> 목표한 정확도에 도달했으며, 수행한 라운드 수는 {Server.current_round}회 입니다.")
-                printLog(f"SERVER >> 마무리 중입니다..")
+                printLog("SERVER", f"목표한 정확도에 도달했으며, 수행한 라운드 수는 {Server.current_round}회 입니다.")
+                printLog("SERVER", "마무리 중입니다..")
                 for idx in clients_idx:
                     dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
                 
                 break
             
             elif Server.current_round == Server.target_rounds:
-                printLog(f"SERVER >> 목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
-                printLog(f"SERVER >> 마무리 중입니다..")
+                printLog(f"SERVER", f"목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
+                printLog(f"SERVER", "마무리 중입니다..")
                 for idx in clients_idx:
                     dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
                 break
         
         Server.terminate()
-        printLog(f"SERVER >> FL 프로세스를 종료합니다.")
+        printLog(f"SERVER", "FL 프로세스를 종료합니다.")
         dist.barrier()

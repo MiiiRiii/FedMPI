@@ -29,7 +29,6 @@ class PowerOfChoiceServer(FedAvgServer.FedAvgServer):
         for idx in range(d):
             req=dist.irecv(tensor=local_loss)
             req.wait()
-            printLog(f"client {req.source_rank()}의 local loss는 {local_loss.item()}입니다.")
             local_loss_list[req.source_rank()] = local_loss.item()
 
         sorted_local_loss_list = sorted(local_loss_list.items(), key=lambda item:item[1], reverse=True)

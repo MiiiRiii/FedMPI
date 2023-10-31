@@ -26,12 +26,13 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
         else :
             self.local_model_version = global_model_version.item()
 
-            printLog(f"CLIENT {self.id} >> 로컬 모델 버전 : {int(self.local_model_version)}")
+            printLog(f"CLIENT {self.id}", f"로컬 모델 버전 : {int(self.local_model_version)}")
             super().receive_global_model_from_server()
             return 1
 
     def train(self):
-        printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
+        printLog(f"CLIENT {self.id}", "로컬 학습을 시작합니다.")
+            
 
         start=time.time()
 
@@ -72,10 +73,9 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
 
                 loss.mean().backward()
                 optimizer.step()
-            printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
-
+            printLog(f"CLIENT {self.id}", f"{e+1} epoch을 수행했습니다.")
         self.total_train_time += time.time()-start
-        printLog(f"CLIENT {self.id} >> epoch train loss: {epoch_train_loss}")
+        printLog(f"CLIENT {self.id}", f"epoch train loss: {epoch_train_loss}")
 
         return epoch_train_loss
     

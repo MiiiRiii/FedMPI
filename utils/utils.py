@@ -22,9 +22,9 @@ def omp_num_threads_per_clients(num_clients, dataset_name):
     random.shuffle(num_threads)
     return num_threads
 
-def printLog(message):
+def printLog(subject, message):
     now = str(datetime.now())
-    print("["+now+"] " + message)
+    print("["+now+"] " + subject + " >> " + message)
 
 def set_num_local_epoch_by_random(num_clients, min, max):
     clients_local_epoch=[]

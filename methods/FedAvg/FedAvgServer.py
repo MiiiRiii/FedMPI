@@ -31,7 +31,7 @@ class FedAvgServer:
     def setup(self, dataset, iid, split, cluster_type):
         
         # global model초기화    
-        printLog(f"PS >> global model을 초기화 합니다.")
+        printLog("SERVER", f"global model을 초기화 합니다.")
         if(dataset=="CIFAR10"):
             self.model_controller = CNN_Cifar10
         elif(dataset=="MNIST"):
@@ -44,14 +44,14 @@ class FedAvgServer:
         init_weight(self.model)
         
         # local model을 받기 위한 버퍼 생성
-        printLog(f"PS >> 빈 local model을 생성합니다.")
+        printLog("SERVER", f"빈 local model을 생성합니다.")
         self.flatten_client_models = {}
         
         for idx in range(1,self.num_clients+1):
             self.flatten_client_models[idx] = TensorBuffer(list(self.model.state_dict().values()))
 
         # train 데이터 분할
-        printLog(f"PS >> 데이터셋을 다운받습니다.")
+        printLog("SERVER", f"데이터셋을 다운받습니다.")
         train_datasets, self.test_data = create_dataset(self.num_clients, dataset, iid, split)
 
         dist.barrier()
@@ -71,7 +71,7 @@ class FedAvgServer:
         dist.barrier()
 
     def send_local_train_dataset_to_clients(self, train_datasets):
-        printLog(f"클라이언트들에게 로컬 데이터셋을 분할합니다")
+        printLog("SERVER", f"클라이언트들에게 로컬 데이터셋을 분할합니다")
         self.len_local_dataset.append(-1)
         for idx, dataset in enumerate(train_datasets):
             if idx==self.num_clients:
@@ -124,7 +124,7 @@ class FedAvgServer:
 
     def average_aggregation(self, selected_client_idx, coefficient):
 
-        printLog("PS >> global aggregation을 진행합니다.")
+        printLog("SERVER", "global aggregation을 진행합니다.")
         averaged_weights = OrderedDict()
         
         for idx, client_idx in enumerate(selected_client_idx):

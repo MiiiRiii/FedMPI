@@ -18,7 +18,7 @@ class CHAFLServer(FedAvgServer.FedAvgServer):
 
         for req in reqs:
             req.wait()
-            printLog(f"Server >> CLIENT {req.source_rank()}가 최소 할당량을 완료함")
+            printLog("SERVER", f"CLIENT {req.source_rank()}가 최소 할당량을 완료함")
         
         dist.broadcast(tensor=torch.tensor(float(1)), src=0, async_op=True, group=currentRoundGroup)
 
@@ -60,7 +60,7 @@ class CHAFLServer(FedAvgServer.FedAvgServer):
         sum_squared_local_epoch=0
         for idx in selected_client_idx:
             dist.recv(tensor=tensor, src=idx, tag=1)
-            printLog(f"PS >> CLIENT {idx}가 수행한 local epoch은 {tensor.item()}입니다.")
+            printLog("SERVER", f"CLIENT {idx}가 수행한 local epoch은 {tensor.item()}입니다.")
             selected_client_squared_local_epoch[idx]=(tensor.item())**2
             sum_squared_local_epoch+=(tensor.item())**2
 

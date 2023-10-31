@@ -76,7 +76,7 @@ class PowerOfChoice(object):
             # select clients
             Server.send_global_model_to_clients(candidate_clients)
             selected_client_idx = Server.client_select_pow_d(self.d, int(Server.selection_ratio * Server.num_clients))
-            printLog(f"PS >> 학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
+            printLog("SERVER", f"학습에 참여할 클라이언트는 {selected_client_idx}입니다.")
             dist.broadcast(tensor=torch.tensor(selected_client_idx), src=0, group=candidate_clients_group)
             dist.destroy_process_group(candidate_clients_group)
             
@@ -86,7 +86,7 @@ class PowerOfChoice(object):
             Server.average_aggregation(selected_client_idx, coefficient)
             global_acc, global_loss = Server.evaluate()
             Server.current_round+=1
-            printLog(f"PS >> {Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
+            printLog("SERVER", f"{Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
 
             if Server.wandb_on=="True":
                 wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-current_round_start, "wall_time(m)":(time.time()-current_FL_start)/60})
@@ -95,13 +95,13 @@ class PowerOfChoice(object):
             
             if global_acc>=Server.target_accuracy:
                 dist.broadcast(tensor=torch.tensor([0.]), src=0, group=Server.FLgroup)
-                printLog(f"PS >> 목표한 정확도에 도달했으며, 수행한 라운드 수는 {Server.current_round}회 입니다.")
+                printLog("SERVER", f"목표한 정확도에 도달했으며, 수행한 라운드 수는 {Server.current_round}회 입니다.")
                 break
             elif Server.current_round == Server.target_rounds:
                 dist.broadcast(tensor=torch.tensor([0.]), src=0, group=Server.FLgroup)
-                printLog(f"PS >> 목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
+                printLog("SERVER", f"목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
                 break
             else:
-                printLog(f"PS >> 다음 라운드를 수행합니다.")
+                printLog("SERVER", f"다음 라운드를 수행합니다.")
                 dist.broadcast(tensor=torch.tensor([1.]), src=0, group=Server.FLgroup)
                

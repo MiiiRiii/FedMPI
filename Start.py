@@ -64,7 +64,7 @@ def init_FL(FLgroup, args):
                     "method": args.method,
                     "d": args.d
                 })
-            printLog(f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
+            printLog("MAIN",f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
             Server.setup(args.dataset, args.iid, args.split, args.cluster_type)
 
             
@@ -72,7 +72,7 @@ def init_FL(FLgroup, args):
             if args.wandb_on == "True":
                 wandb.finish()
         else:
-            printLog(f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
+            printLog("MAIN","I am client in {socket.gethostname()} rank {WORLD_RANK}")
             Client.setup(args.cluster_type)
             method.runClient(Client)
 

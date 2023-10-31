@@ -20,7 +20,7 @@ class CHAFLClient(FedAvgClient.FedAvgClient):
             optimizer.step()
 
     def train(self, currentRoundGroup):
-        printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
+        printLog(f"CLIENT {self.id}", "로컬 학습을 시작합니다.")
         
         localEpoch = self.local_epoch-1
 
@@ -33,7 +33,7 @@ class CHAFLClient(FedAvgClient.FedAvgClient):
 
         for e in range(localEpoch):
             self.doOneLocalEpoch(dataloader, optimizer, loss_function)
-            printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")    
+            printLog(f"CLIENT {self.id}", f"{e+1} epoch을 수행했습니다.")    
 
         # Notify completion minimum quota to server
         dist.send(tensor=torch.tensor([float(1)]), dst=0)
@@ -50,7 +50,7 @@ class CHAFLClient(FedAvgClient.FedAvgClient):
                 break
             self.doOneLocalEpoch(dataloader, optimizer, loss_function)
             localEpoch+=1    
-            printLog(f"CLIENT {self.id} >> {localEpoch} epoch을 수행했습니다.")  
+            printLog(f"CLIENT {self.id}", f"{localEpoch} epoch을 수행했습니다.")  
 
         self.total_train_time += time.time()-start
         return localEpoch

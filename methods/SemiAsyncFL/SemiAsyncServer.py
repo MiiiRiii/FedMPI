@@ -30,16 +30,16 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
             req.wait()
             if self.terminate_FL.is_set():
                 break
-            printLog(f"SERVER >> CLIENT{req.source_rank()}에게 로컬 모델을 받음")
+            printLog("SERVER", f"CLIENT{req.source_rank()}에게 로컬 모델을 받음")
             self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
                 self.cached_client_idx.append(req.source_rank())
                 self.num_cached_local_model += 1
 
-        printLog(f"SERVER >> 백그라운드 스레드를 종료합니다.")
+        printLog("SERVER" ,"백그라운드 스레드를 종료합니다.")
 
     def wait_until_can_update_global_model(self, num_local_model_limit):
-        printLog(f"SERVER >> 현재까지 받은 로컬 모델 개수: {self.num_cached_local_model}")
+        printLog("SERVER" , f"현재까지 받은 로컬 모델 개수: {self.num_cached_local_model}")
         while True:
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
                 if self.num_cached_local_model >= num_local_model_limit:
@@ -51,7 +51,7 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
                         picked_client_idx.append(self.cached_client_idx.pop(0))
 
                     
-                    printLog(f"SERVER >> picked client list : {picked_client_idx}")
+                    printLog("SERVER", f"picked client list : {picked_client_idx}")
                     
                     break
 
@@ -79,15 +79,7 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
             
 
             self.flatten_client_models[idx] = TensorBuffer(list(interpolated_weights.values()))
-    """
-    def calculate_coefficient(self, picked_client_idx):
 
-        coefficient={}
-        for idx in picked_client_idx : 
-            coefficient[idx] = self.len_local_dataset[idx] / self.len_total_local_dataset
-        
-        return coefficient
-    """
     def send_global_model_to_clients(self, sucess_uploaded_client_idx):
         flatten_model = TensorBuffer(list(self.model.state_dict().values()))
         for idx in sucess_uploaded_client_idx:
@@ -119,7 +111,7 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
         test_loss = test_loss / len(dataloader)
         test_accuracy = correct / len(self.test_data)
 
-        printLog(f"Server >> CLIENT{client_idx}의 로컬 모델 평가 결과 : acc=>{test_accuracy}, test_loss=>{test_loss}")
+        printLog("Server", f"CLIENT{client_idx}의 로컬 모델 평가 결과 : acc=>{test_accuracy}, test_loss=>{test_loss}")
 
     def terminate(self):
         self.terminate_FL.set()
