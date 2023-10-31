@@ -29,7 +29,7 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
             printLog(f"CLIENT {self.id} >> 로컬 모델 버전 : {int(self.local_model_version)}")
             super().receive_global_model_from_server()
             return 1
-    """
+
     def train(self):
         printLog(f"CLIENT {self.id} >> 로컬 학습을 시작합니다.")
 
@@ -37,7 +37,7 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
 
         self.model.train()
         optimizer = SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
-        loss_function = CrossEntropyLoss()
+        loss_function = CrossEntropyLoss(reduction='none')
         dataloader = DataLoader(self.dataset, self.batch_size, shuffle=True)
 
         ########## oort ##########
@@ -70,14 +70,15 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
                         epoch_train_loss = (1. - loss_decay) * epoch_train_loss + loss_decay * temp_loss
                 ##########################
 
-                loss.backward()
+                loss.mean().backward()
                 optimizer.step()
             printLog(f"CLIENT {self.id} >> {e+1} epoch을 수행했습니다.")
 
         self.total_train_time += time.time()-start
+        printLog(f"CLIENT {self.id} >> epoch train loss: {epoch_train_loss}")
 
         return epoch_train_loss
-    """
+    
     
     def terminate(self):
         # 클라이언트 1이 대표로 실행

@@ -36,7 +36,7 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
                 self.cached_client_idx.append(req.source_rank())
                 self.num_cached_local_model += 1
 
-        printLog(f"SERVER >> 스레드를 종료합니다.")
+        printLog(f"SERVER >> 백그라운드 스레드를 종료합니다.")
 
     def wait_until_can_update_global_model(self, num_local_model_limit):
         printLog(f"SERVER >> 현재까지 받은 로컬 모델 개수: {self.num_cached_local_model}")
