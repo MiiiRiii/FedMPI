@@ -72,7 +72,7 @@ def init_FL(FLgroup, args):
             if args.wandb_on == "True":
                 wandb.finish()
         else:
-            printLog("MAIN","I am client in {socket.gethostname()} rank {WORLD_RANK}")
+            printLog("MAIN",f"I am client in {socket.gethostname()} rank {WORLD_RANK}")
             Client.setup(args.cluster_type)
             method.runClient(Client)
 

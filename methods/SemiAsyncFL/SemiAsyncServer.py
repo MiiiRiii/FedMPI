@@ -116,3 +116,8 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
     def terminate(self):
         self.terminate_FL.set()
         dist.send(tensor=torch.tensor(0).type(torch.FloatTensor), dst=1)
+
+    def average_aggregation(self, selected_client_idx, coefficient):
+        for idx in selected_client_idx:
+            printLog("SERVER", f"CLIENT {idx}의 staleness는 {self.current_round - self.local_model_version[idx]}입니다.")
+        return super().average_aggregation(selected_client_idx, coefficient)

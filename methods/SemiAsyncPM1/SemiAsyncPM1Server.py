@@ -89,7 +89,7 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
             dist.recv(tensor=is_receive, src=idx) # 해당 클라이언트의 글로벌 수신 여부
             if is_receive.item()==1: # 해당 클라이언트가 글로벌 모델로 교체했음
                 self.local_model_version[idx] = self.current_round
-                
+
     def evaluate_local_model(self, client_idx):
         loss_function = CrossEntropyLoss()
         dataloader = DataLoader(self.test_data, self.batch_size)
