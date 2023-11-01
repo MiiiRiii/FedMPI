@@ -2,6 +2,7 @@ from methods.FedAvg import FedAvg, FedAvgClient, FedAvgServer
 from methods.CHAFL import CHAFL, CHAFLClient, CHAFLServer
 from methods.PowerOfChoice import PowerOfChoice, PowerOfChoiceClient, PowerOfChoiceServer
 from methods.SemiAsyncFL import SemiAsync, SemiAsyncClient, SemiAsyncServer
+from methods.SemiAsyncPM1 import SemiAsyncPM1, SemiAsyncPM1Client, SemiAsyncPM1Server
 
 from utils.utils import printLog
 
@@ -50,6 +51,11 @@ def init_FL(FLgroup, args):
             method = SemiAsync.SemiAsync()
             Server = SemiAsyncServer.SemiAsyncServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
             Client = SemiAsyncClient.SemiAsyncClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
+
+        elif args.method=="SemiAsyncPM1":
+            method = SemiAsyncPM1.SemiAsyncPM1()
+            Server = SemiAsyncPM1Server.SemiAsyncPM1Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            Client = SemiAsyncPM1Client.SemiAsyncPM1Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
         
         if WORLD_RANK == 0:
             if args.wandb_on == "True":
