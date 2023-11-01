@@ -138,16 +138,27 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
 
     def calculate_coefficient(self, picked_client_idx):
         data_coefficient = super().calculate_coefficient(picked_client_idx)
-        utility_coefficient={}
-        sum=0
+        utility_coefficient = copy.deepcopy(self.local_utility)
+
+        data_coeff_min = min(data_coefficient.values())
+        data_coeff_max = max(data_coefficient.values())
+        util_coeff_min = min(utility_coefficient.values())
+        util_coeff_max = max(utility_coefficient.values())
+
+        data_coefficient_normalized = [(val-data_coeff_min)/(data_coeff_max-data_coeff_min) for val in data_coefficient]
+        utility_coefficient_normalized = [(val-data_coeff_min)/(util_coeff_max-util_coeff_min) for val in utility_coefficient]
         
-        for idx in picked_client_idx:
-            utility_coefficient[idx] = self.local_utility[idx]
-            sum+=self.local_utility[idx]
-        
-        for idx in picked_client_idx:
-            utility_coefficient[idx] = utility_coefficient[idx]/sum
-        
+        data_weight = 0.5
+        util_weight = 0.5
+
+        combined = [data_weight * di + util_weight * ui for di, ui in zip(data_coefficient_normalized, utility_coefficient_normalized)]
+
+        sum_combined = sum(combined)
+
+        coefficient = [ci / sum_combined for ci in combined]
+
+        return coefficient
+
 
     def terminate(self):
         self.terminate_FL.set()
