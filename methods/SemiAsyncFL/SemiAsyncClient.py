@@ -87,7 +87,6 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
                     epoch_train_loss += loss.detach().item()
                 loss.backward()
                 ########################
-
                 
                 optimizer.step()
             printLog(f"CLIENT {self.id}", f"{e+1} epoch을 수행했습니다.")

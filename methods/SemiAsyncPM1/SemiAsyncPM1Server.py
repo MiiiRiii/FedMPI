@@ -22,18 +22,38 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         self.num_cached_local_model_lock = threading.Lock()
         self.terminate_FL = threading.Event()
         self.terminate_FL.clear()
+        self.local_utility = {}
+
+    def receive_local_model(self):
+        temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
+        req = dist.irecv(tensor=temp_local_model.buffer)
+        req.wait()
+        
+            
+        return temp_local_model, req.source_rank()
+
+    def receive_local_model_info(self):
+        local_model_info = torch.zeros(2)
+        req = dist.irecv(tensor=local_model_info)
+        req.wait()
+        return local_model_info[0].item(), local_model_info[1].item()
 
     def receive_local_model_from_any_clients(self):
         while not self.terminate_FL.is_set():
-            temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
-            req = dist.irecv(tensor=temp_local_model.buffer)
-            req.wait()
+            
+            temp_local_model, local_model_source_rank = self.receive_local_model()
+            printLog("SERVER", f"CLIENT {local_model_source_rank}에게 로컬 모델을 받음")
+            
+            local_model_info_source_rank, utility = self.receive_local_model_info()
+            self.local_utility[local_model_info_source_rank] = utility
+            printLog("SERVER", f"CLIENT {local_model_info_source_rank}의 utlity: {utility}")
+            
             if self.terminate_FL.is_set():
                 break
-            printLog("SERVER", f"CLIENT{req.source_rank()}에게 로컬 모델을 받음")
-            self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
+
+            self.flatten_client_models[local_model_source_rank] = copy.deepcopy(temp_local_model)
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
-                self.cached_client_idx.append(req.source_rank())
+                self.cached_client_idx.append(local_model_source_rank)
                 self.num_cached_local_model += 1
 
         printLog("SERVER" ,"백그라운드 스레드를 종료합니다.")
@@ -116,6 +136,20 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
 
         printLog("Server", f"CLIENT{client_idx}의 로컬 모델 평가 결과 : acc=>{test_accuracy}, test_loss=>{test_loss}")
 
+    def calculate_coefficient(self, picked_client_idx):
+        data_coefficient = super().calculate_coefficient(picked_client_idx)
+        utility_coefficient={}
+        sum=0
+        
+        for idx in picked_client_idx:
+            utility_coefficient[idx] = self.local_utility[idx]
+            sum+=self.local_utility[idx]
+        
+        for idx in picked_client_idx:
+            utility_coefficient[idx] = utility_coefficient[idx]/sum
+        
+
     def terminate(self):
         self.terminate_FL.set()
         dist.send(tensor=torch.tensor(0).type(torch.FloatTensor), dst=1)
+        

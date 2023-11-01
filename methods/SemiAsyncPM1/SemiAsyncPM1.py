@@ -17,8 +17,8 @@ class SemiAsyncPM1(object):
                 printLog(f"CLIENT{Client.id}", "FL 프로세스를 종료합니다.")
 
                 break
-            Client.train()
-            Client.send_local_model_to_server()
+            utility = Client.train()
+            Client.send_local_model_to_server(utility)
 
         Client.terminate()
         dist.barrier()

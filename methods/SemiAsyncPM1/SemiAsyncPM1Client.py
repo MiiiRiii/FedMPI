@@ -6,6 +6,7 @@ import torch.distributed as dist
 import torch
 import time
 import threading
+import math
 
 from torch.utils.data import DataLoader
 from torch.optim import SGD
@@ -20,6 +21,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         self.current_local_epoch = self.local_epoch
         self.receive_global_model_flag = threading.Event()
         self.receive_global_model_flag.clear()
+        self.len_local_dataset = len(dataset)
 
     def receive_global_model_from_server(self):
         global_model_info = torch.zeros(2)
@@ -50,18 +52,17 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
         self.model.train()
         optimizer = SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
-        loss_function = CrossEntropyLoss(reduction='none')
+        loss_function = CrossEntropyLoss()
         dataloader = DataLoader(self.dataset, self.batch_size, shuffle=True)
 
-        ########## oort ##########
-        epoch_train_loss = None
-        loss_decay = 0.2
-        ##########################
+        epoch_train_loss = 0.0
+        
         
         e=0
         while e < self.current_local_epoch:
             if self.receive_global_model_flag.is_set(): # 학습 중간에 글로벌 모델을 받았다면 교체
                 e=0
+                epoch_train_loss = 0.0
                 self.current_local_epoch -= 1
                 self.receive_global_model_flag.clear()
                 continue
@@ -71,35 +72,22 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                 outputs = self.model.forward(data)
                 loss = loss_function(outputs, labels)
                 
-                ########## oort ##########
-                temp_loss = 0.
-                loss_cnt = 1.
+                if e==1:
+                    epoch_train_loss += loss.detach().item()
 
-                loss_list = loss.tolist()
-                for l in loss_list:
-                    temp_loss += l**2
-
-                loss_cnt = len(loss_list)
-
-                temp_loss = temp_loss/float(loss_cnt)
-
-                if e==1: # only measure the loss of the first epoch
-                    if epoch_train_loss is None:
-                        epoch_train_loss = temp_loss
-                    else:
-                        epoch_train_loss = (1. - loss_decay) * epoch_train_loss + loss_decay * temp_loss
-                ##########################
-
-                loss.mean().backward()
+                loss.backward()
                 optimizer.step()
                 e+=1
 
             printLog(f"CLIENT {self.id}", f"{e+1} epoch을 수행했습니다.")
             
         self.total_train_time += time.time()-start
-        printLog(f"CLIENT {self.id}", f"epoch train loss: {epoch_train_loss}")
 
-        return epoch_train_loss
+        utility = math.sqrt(epoch_train_loss / self.len_local_dataset) * self.len_local_dataset
+
+        printLog(f"CLIENT {self.id}", f"local utility: {utility}")
+
+        return utility
     
     
     def terminate(self):
@@ -110,6 +98,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
             if isTerminate == 0:
                 self.send_local_model_to_server()
     
-    def send_local_model_to_server(self):
+    def send_local_model_to_server(self, utility):
         self.current_local_epoch = self.local_epoch
-        return super().send_local_model_to_server()
+        super().send_local_model_to_server()
+        dist.send(tensor=torch.tensor([self.id, utility]), dst=0)

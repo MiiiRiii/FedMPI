@@ -127,5 +127,4 @@ class FedAvgClient:
 
     def send_local_model_to_server(self):
         flatten_model=TensorBuffer(list(self.model.state_dict().values()))
-
         dist.send(tensor=flatten_model.buffer, dst=0)
