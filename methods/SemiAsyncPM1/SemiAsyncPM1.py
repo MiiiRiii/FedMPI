@@ -9,16 +9,22 @@ class SemiAsyncPM1(object):
         None
     
     def runClient(self, Client):
-        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(), daemon=True)
+        can_local_update_flag = threading.Event()
+        can_local_update_flag.clear()
+
+        terminate_FL_flag = threading.Event()
+        terminate_FL_flag.clear()
+
+        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(can_local_update_flag, terminate_FL_flag,), daemon=True)
         listen_global_model.start()
         while True:
-            isTerminate = Client.receive_global_model_from_server()
-            if isTerminate == 0 :
-                printLog(f"CLIENT{Client.id}", "FL 프로세스를 종료합니다.")
-
+            if terminate_FL_flag.is_set():
+                printLog(f"CLIENT {self.id}", "FL 프로세스를 종료합니다.")
                 break
-            utility = Client.train()
-            Client.send_local_model_to_server(utility)
+            if can_local_update_flag.is_set():
+                utility = Client.train()
+                Client.send_local_model_to_server(utility)
+                can_local_update_flag.clear()
 
         Client.terminate()
         dist.barrier()
