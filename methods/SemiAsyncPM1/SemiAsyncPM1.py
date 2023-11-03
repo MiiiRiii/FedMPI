@@ -9,37 +9,39 @@ class SemiAsyncPM1(object):
         None
     
     def runClient(self, Client):
-        can_local_update_flag = threading.Event()
-        can_local_update_flag.clear()
+        is_ongoing_local_update_flag = threading.Event() # 로컬 업데이트가 현재 진행중인지
+        is_ongoing_local_update_flag.clear()
 
         terminate_FL_flag = threading.Event()
         terminate_FL_flag.clear()
 
-        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(can_local_update_flag, terminate_FL_flag,), daemon=True)
+        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(is_ongoing_local_update_flag, terminate_FL_flag,), daemon=True)
         listen_global_model.start()
         while True:
             if terminate_FL_flag.is_set():
                 printLog(f"CLIENT {self.id}", "FL 프로세스를 종료합니다.")
                 break
-            if can_local_update_flag.is_set():
+            if is_ongoing_local_update_flag.is_set():
                 utility = Client.train()
                 Client.send_local_model_to_server(utility)
-                can_local_update_flag.clear()
+                is_ongoing_local_update_flag.clear()
 
         Client.terminate()
         dist.barrier()
             
     def runServer(self, Server):
-        current_FL_start = time.time()
+        
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
         picked_client_idx =clients_idx # 학습 처음엔 모든 클라이언트에게 보냄
         num_local_model_limit=int(Server.num_clients*Server.selection_ratio) # 한 라운드 동안 수신할 local model 최대 개수
-
+        
         listen_local_update = threading.Thread(target=Server.receive_local_model_from_any_clients, args=(), daemon=True)
-        listen_local_update.start()
+        
+        global_acc, global_loss = Server.evaluate()
 
-        global_acc=0.
-        global_loss=100.
+        current_FL_start = time.time()
+        
+        listen_local_update.start()
 
         # FL 프로세스 시작
         while True:
