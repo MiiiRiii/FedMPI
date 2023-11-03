@@ -19,7 +19,7 @@ class SemiAsyncPM1(object):
         listen_global_model.start()
         while True:
             if terminate_FL_flag.is_set():
-                printLog(f"CLIENT {self.id}", "FL 프로세스를 종료합니다.")
+                printLog(f"CLIENT {Client.id}", "FL 프로세스를 종료합니다.")
                 break
             if is_ongoing_local_update_flag.is_set():
                 utility = Client.train()
@@ -68,18 +68,13 @@ class SemiAsyncPM1(object):
             if global_acc>=Server.target_accuracy:
                 printLog("SERVER", f"목표한 정확도에 도달했으며, 수행한 라운드 수는 {Server.current_round}회 입니다.")
                 printLog("SERVER", "마무리 중입니다..")
-                for idx in clients_idx:
-                    dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
-                
                 break
             
             elif Server.current_round == Server.target_rounds:
                 printLog(f"SERVER", f"목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
                 printLog(f"SERVER", "마무리 중입니다..")
-                for idx in clients_idx:
-                    dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
                 break
         
-        Server.terminate()
+        Server.terminate(clients_idx)
         printLog(f"SERVER", "FL 프로세스를 종료합니다.")
         dist.barrier()

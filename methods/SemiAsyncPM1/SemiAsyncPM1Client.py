@@ -28,7 +28,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
     def receive_global_model_from_server(self, is_ongoing_local_update_flag, terminate_FL_flag):
         
         self.received_global_model = self.model_controller.Model() # 학습 중간에 받은 글로벌 모델을 담아두는 용도 (바로 self.model에 적용하지 않는 이유: 자원 동시에 접근될 수도 있어서)
-        
+
         model_state_dict = self.model.state_dict()
 
         flatten_model = TensorBuffer(list(model_state_dict.values()))
@@ -117,15 +117,6 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
         return utility
     
-    
-    def terminate(self):
-        # 클라이언트 1이 대표로 실행
-        if self.id == 1:
-            isTerminate = torch.tensor(1).type(torch.FloatTensor)
-            dist.recv(tensor = isTerminate, src=0)
-            if isTerminate == 0:
-                self.send_local_model_to_server()
-    
     def send_local_model_to_server(self, utility):
         self.current_local_epoch = self.local_epoch
 
@@ -135,4 +126,15 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         local_model_info.append(self.local_model_version)
         local_model_info = torch.tensor(local_model_info)
         
-        dist.send(tensor=local_model_info, dst=0)
+        dist.send(tensor=local_model_info, dst=0)    
+    
+    
+    def terminate(self):
+        # 클라이언트 1이 대표로 실행
+        if self.id == 1:
+            isTerminate = torch.zeros(1)
+            dist.recv(tensor = isTerminate, src=0)
+            if isTerminate == 0:
+                self.send_local_model_to_server()
+    
+

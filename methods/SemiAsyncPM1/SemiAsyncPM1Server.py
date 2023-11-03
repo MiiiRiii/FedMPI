@@ -168,7 +168,15 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         return coefficient
 
 
-    def terminate(self):
+    def terminate(self, clients_idx):
         self.terminate_FL.set()
-        dist.send(tensor=torch.tensor(0).type(torch.FloatTensor), dst=1)
+
+        temp_global_model=TensorBuffer(list(self.model.state_dict().values()))
+        global_model_info = torch.zeros(len(temp_global_model.buffer)+2)
+        global_model_info[-2] = -1
+
+        for idx in clients_idx:
+            dist.send(tensor=global_model_info, dst=idx) # 종료되었음을 알림
+        
+        dist.send(tensor=torch.zeros(1), dst=1)
         
