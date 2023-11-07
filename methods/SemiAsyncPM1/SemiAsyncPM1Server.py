@@ -46,7 +46,7 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
                 self.local_utility[req.source_rank()] = local_model_info[-2]            
 
                 self.local_model_version[req.source_rank()] = local_model_info[-1]
-                printLog("SERVER", f"CLIENT {req.source_rank()}의 로컬 모델 버전: {local_model_info[-1]}")
+                printLog("SERVER", f"CLIENT {req.source_rank()}의 로컬 모델 버전: {local_model_info[-1].item()}")
                 
 
         printLog("SERVER" ,"백그라운드 스레드를 종료합니다.")
