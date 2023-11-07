@@ -122,7 +122,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
             
         self.total_train_time += time.time()-start
 
-        if terminate_flag.set():
+        if terminate_flag.is_set():
             utility = -1
         else :
             #utility = math.sqrt(epoch_train_loss / self.len_local_dataset) * self.len_local_dataset
