@@ -116,6 +116,7 @@ if __name__ == "__main__":
     parser.add_argument("--repeat",type=int)
 
     parser.add_argument("--cluster_type", choices=['WISE', 'KISTI'], type=str)
+    parser.add_argument("--num_threads", type=str)
 
 
     

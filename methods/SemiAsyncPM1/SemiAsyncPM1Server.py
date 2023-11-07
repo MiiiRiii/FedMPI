@@ -44,10 +44,9 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
                 printLog("SERVER", f"CLIENT {req.source_rank()}에게 로컬 모델을 받음")
                 
                 self.local_utility[req.source_rank()] = local_model_info[-2]            
-                printLog("SERVER", f"CLIENT {req.source_rank()}의 utlity: {local_model_info[-2]}")
 
                 self.local_model_version[req.source_rank()] = local_model_info[-1]
-                printLog("SERVER", f"CLIENT {req.source_rank()}의 local model version: {local_model_info[-1]}")
+                printLog("SERVER", f"CLIENT {req.source_rank()}의 로컬 모델 버전: {local_model_info[-1]}")
                 
 
         printLog("SERVER" ,"백그라운드 스레드를 종료합니다.")
@@ -64,8 +63,6 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
                     for idx in range(num_local_model_limit):
                         picked_client_idx.append(self.cached_client_idx.pop(0))
 
-                    
-                    printLog("SERVER", f"picked client list : {picked_client_idx}")
                     
                     break
 
@@ -94,7 +91,7 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
 
             self.flatten_client_models[idx] = TensorBuffer(list(interpolated_weights.values()))
 
-    def send_global_model_to_clients(self, clients_idx, global_loss):
+    def send_global_model_to_clients(self, clients_idx, picked_clients_idx, global_loss):
         flatten_model = TensorBuffer(list(self.model.state_dict().values()))
 
         shuffled_clients_idx = copy.deepcopy(clients_idx)
@@ -106,7 +103,10 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         global_model_info = torch.tensor(global_model_info)
 
         for idx in shuffled_clients_idx:
-             dist.send(tensor=global_model_info, dst=idx) # 글로벌 모델, 현재 라운드, global loss 전송
+            if idx in picked_clients_idx:
+                dist.send(tensor=torch.cat([global_model_info, torch.tensor([1])]), dst=idx) # 글로벌 모델, 현재 라운드, global loss 전송, 선택되었음 전송
+            else:
+                dist.send(tensor=torch.cat([global_model_info, torch.tensor([0])]), dst=idx) # 글로벌 모델, 현재 라운드, global loss 전송, 선택되지 않음 전송
 
 
     def evaluate_local_model(self, client_idx):
@@ -166,6 +166,14 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         """
 
         return coefficient
+    
+    def average_aggregation(self, selected_client_idx, coefficient):
+
+        picked_client_info = ""
+        for idx in selected_client_idx:
+            picked_client_info += f"CLIENT {idx}의 staleness: {self.current_round - self.local_model_version[idx]}\n"
+        printLog("SERVER", f"picked clients info: \n{picked_client_info}")
+        super().average_aggregation(selected_client_idx, coefficient)
 
 
     def terminate(self, clients_idx):
@@ -176,6 +184,7 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         global_model_info[-2] = -1
 
         for idx in clients_idx:
+            printLog("SERVER", f"CLIENT {idx}에게 끝났음을 알림")
             dist.send(tensor=global_model_info, dst=idx) # 종료되었음을 알림
         
         dist.send(tensor=torch.zeros(1), dst=1)

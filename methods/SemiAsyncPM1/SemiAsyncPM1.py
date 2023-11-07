@@ -23,6 +23,8 @@ class SemiAsyncPM1(object):
                 break
             if is_ongoing_local_update_flag.is_set():
                 utility = Client.train()
+                if terminate_FL_flag.is_set():
+                    break
                 Client.send_local_model_to_server(utility)
                 is_ongoing_local_update_flag.clear()
 
@@ -49,7 +51,7 @@ class SemiAsyncPM1(object):
             
             current_round_start=time.time()
 
-            Server.send_global_model_to_clients(clients_idx, global_loss)
+            Server.send_global_model_to_clients(clients_idx, picked_client_idx, global_loss)
 
             picked_client_idx  = Server.wait_until_can_update_global_model(num_local_model_limit)
 

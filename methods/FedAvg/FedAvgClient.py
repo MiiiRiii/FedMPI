@@ -1,6 +1,7 @@
 import torch.distributed as dist
 import torch
 import time
+import torchvision
 
 from torch.utils.data import DataLoader
 from torch.optim import SGD
@@ -74,6 +75,15 @@ class FedAvgClient:
 
         printLog(f"CLIENT {self.id}", "로컬데이터셋을 받았습니다.")
 
+        ############ test_dataset ############
+        self.test_dataset = torchvision.datasets.__dict__[self.dataset_name](
+            root="./data/",
+            train=False,
+            download=False,
+            transform=torchvision.transforms.ToTensor()
+        )
+        ######################################
+
 
     def train(self):
         printLog(f"CLIENT {self.id}", "로컬 학습을 시작합니다.")
@@ -100,7 +110,7 @@ class FedAvgClient:
         self.model.eval()
 	
         loss_function = CrossEntropyLoss()
-        dataloader = DataLoader(self.dataset, self.batch_size)
+        dataloader = DataLoader(self.test_dataset, self.batch_size)
 
         test_loss, correct = 0, 0
         with torch.no_grad():
@@ -115,7 +125,6 @@ class FedAvgClient:
 
 
         test_loss = test_loss / len(dataloader)
-
         return test_loss
     
     def receive_global_model_from_server(self):
