@@ -142,6 +142,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
     
     
     def terminate(self):
+        dist.barrier()
         # 클라이언트 1이 대표로 실행
         if self.id == 1:
             isTerminate = torch.zeros(1)

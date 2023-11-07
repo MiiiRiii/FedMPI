@@ -186,6 +186,6 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         for idx in clients_idx:
             printLog("SERVER", f"CLIENT {idx}에게 끝났음을 알림")
             dist.send(tensor=global_model_info, dst=idx) # 종료되었음을 알림
-        
+        dist.barrier()
         dist.send(tensor=torch.zeros(1), dst=1)
         

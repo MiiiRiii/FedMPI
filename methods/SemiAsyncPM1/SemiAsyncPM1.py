@@ -22,8 +22,8 @@ class SemiAsyncPM1(object):
                 printLog(f"CLIENT {Client.id}", "FL 프로세스를 종료합니다.")
                 break
             if is_ongoing_local_update_flag.is_set():
-                utility = Client.train()
-                if terminate_FL_flag.is_set():
+                utility = Client.train(terminate_FL_flag)
+                if terminate_FL_flag.is_set() or utility == -1:
                     break
                 Client.send_local_model_to_server(utility)
                 is_ongoing_local_update_flag.clear()
@@ -79,4 +79,3 @@ class SemiAsyncPM1(object):
         
         Server.terminate(clients_idx)
         printLog(f"SERVER", "FL 프로세스를 종료합니다.")
-        dist.barrier()
