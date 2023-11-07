@@ -82,7 +82,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
         printLog(f"CLIENT {self.id}", "백그라운드 스레드 종료")
 
-    def train(self):
+    def train(self, terminate_flag):
         printLog(f"CLIENT {self.id}", "로컬 학습을 시작합니다.")
             
         start=time.time()
@@ -122,8 +122,11 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
             
         self.total_train_time += time.time()-start
 
-        #utility = math.sqrt(epoch_train_loss / self.len_local_dataset) * self.len_local_dataset
-        utility = epoch_train_loss / len(dataloader)
+        if terminate_flag.set():
+            utility = -1
+        else :
+            #utility = math.sqrt(epoch_train_loss / self.len_local_dataset) * self.len_local_dataset
+            utility = epoch_train_loss / len(dataloader)
         printLog(f"CLIENT {self.id}", f"local utility: {utility}")
 
         return utility
