@@ -75,8 +75,8 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                 self.local_model_version = int(global_model_info[-3].item())
                 self.last_global_loss = global_model_info[-2].item()
 
-                local_loss = super().evaluate()
-                printLog(f"CLIENT {self.id}", f"local loss: {local_loss}")
+                #local_loss = super().evaluate()
+                #printLog(f"CLIENT {self.id}", f"local loss: {local_loss}")
 
                 is_ongoing_local_update_flag.set() # 로컬 업데이트 이제 시작해야 하니까 flag set 해줌
 
@@ -102,8 +102,8 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                 self.current_local_epoch -= 1
                 self.receive_global_model_flag.clear()
                 self.model = copy.deepcopy(self.received_global_model)
-                local_loss = super().evaluate()
-                printLog(f"CLIENT {self.id}", f"local loss: {local_loss}")
+                #local_loss = super().evaluate()
+                #printLog(f"CLIENT {self.id}", f"local loss: {local_loss}")
                 continue
 
             for data, labels in dataloader:
