@@ -147,10 +147,13 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
     def terminate(self):
         dist.barrier()
         # 클라이언트 1이 대표로 실행
+        """
         if self.id == 1:
             isTerminate = torch.zeros(1)
             dist.recv(tensor = isTerminate, src=0)
+            printLog(f"CLIENT {self.id}", "서버에게 종료 신호 받음")
             if isTerminate == 0:
+                printLog(f"CLIENT {self.id}", "서버에게 임시")
                 self.send_local_model_to_server(0)
-    
+        """
 
