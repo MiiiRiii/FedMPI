@@ -23,6 +23,7 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         self.terminate_FL = threading.Event()
         self.terminate_FL.clear()
         self.local_utility = {}
+        self.terminated_clients = []
 
     def receive_local_model_from_any_clients(self):
         while not self.terminate_FL.is_set():
@@ -32,6 +33,10 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
 
             req = dist.irecv(tensor=local_model_info) # [local model, utility, local_model version]
             req.wait()
+
+            if local_model_info[-2].item()==-1:
+                printLog("SERVER", f"CLIENT {req.source_rank()}가 FL프로세스를 종료함")
+                self.terminated_clients.append(req.source_rank())
 
             if self.terminate_FL.is_set():
                 break
@@ -186,7 +191,20 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         for idx in clients_idx:
             printLog("SERVER", f"CLIENT {idx}에게 끝났음을 알림")
             dist.send(tensor=global_model_info, dst=idx) # 종료되었음을 알림
+
+        temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
+        local_model_info = torch.zeros(len(temp_local_model.buffer)+2)
+
+        
+        while len(self.terminated_clients) < self.num_clients:
+            req = dist.irecv(tensor=local_model_info)
+            req.wait()
+            if local_model_info[-2].item()==-1 :
+                printLog("SERVER", f"CLIENT {req.source_rank()}가 FL프로세스를 종료함")
+                
+                self.terminated_clients.append(req.source_rank())
+
         dist.barrier()
-        printLog("SERVER", "클라이언트1에게 종료 전송")
-        dist.send(tensor=torch.zeros(1), dst=1)
+        #printLog("SERVER", "클라이언트1에게 종료 전송")
+        #dist.send(tensor=torch.zeros(1), dst=1)
         

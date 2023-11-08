@@ -134,7 +134,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
         return utility
     
-    def send_local_model_to_server(self, utility, terminate_FL_flag=None):
+    def send_local_model_to_server(self, utility):
         self.current_local_epoch = self.local_epoch
 
         flatten_model=TensorBuffer(list(self.model.state_dict().values()))
@@ -142,14 +142,21 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         local_model_info.append(utility)
         local_model_info.append(self.local_model_version)
         local_model_info = torch.tensor(local_model_info)
-        
-        if utility>-1 or terminate_FL_flag == None or not terminate_FL_flag.is_set():
-            dist.send(tensor=local_model_info, dst=0)
+        dist.send(tensor=local_model_info, dst=0)
 
     
     
     def terminate(self):
+        # 서버에게 FL 프로세스를 종료했음을 알리는 신호 
+        flatten_model=TensorBuffer(list(self.model.state_dict().values()))
+        local_model_info = flatten_model.buffer.tolist()
+        local_model_info.append(-1)
+        local_model_info.append(self.local_model_version)
+        local_model_info = torch.tensor(local_model_info)
+        dist.send(tensor = local_model_info, dst=0)
+
         dist.barrier()
+        """
         # 클라이언트 1이 대표로 실행
         printLog(f"CLIENT {self.id}", "client terminate 실행")
         if self.id == 1:
@@ -158,6 +165,6 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
             printLog(f"CLIENT {self.id}", "서버에게 종료 신호 받음")
             if isTerminate == 0:
                 printLog(f"CLIENT {self.id}", "서버에게 임시")
-                self.send_local_model_to_server(-1)
-
+                self.send_local_model_to_server(0)
+        """
 
