@@ -180,8 +180,8 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         self.terminate_FL.set()
 
         temp_global_model=TensorBuffer(list(self.model.state_dict().values()))
-        global_model_info = torch.zeros(len(temp_global_model.buffer)+2)
-        global_model_info[-2] = -1
+        global_model_info = torch.zeros(len(temp_global_model.buffer)+3)
+        global_model_info[-3] = -1
 
         for idx in clients_idx:
             printLog("SERVER", f"CLIENT {idx}에게 끝났음을 알림")

@@ -30,7 +30,6 @@ class SemiAsyncPM1(object):
                 is_ongoing_local_update_flag.clear()
 
         Client.terminate()
-        dist.barrier()
             
     def runServer(self, Server):
         
