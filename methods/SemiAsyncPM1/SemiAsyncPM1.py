@@ -27,7 +27,7 @@ class SemiAsyncPM1(object):
                 if terminate_FL_flag.is_set() or utility == -1:
                     printLog(f"CLIENT {Client.id}", "FL 프로세스를 종료합니다.")
                     break
-                Client.send_local_model_to_server(utility)
+                Client.send_local_model_to_server(utility, terminate_FL_flag)
                 is_ongoing_local_update_flag.clear()
 
         Client.terminate()
