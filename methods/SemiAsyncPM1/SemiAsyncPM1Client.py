@@ -119,12 +119,15 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
             e+=1
 
             printLog(f"CLIENT {self.id}", f"{e} epoch을 수행했습니다.")
+
+            if terminate_flag.is_set():
+                printLog(f"CLIENT {self.id}", f"학습 도중에 FL 프로세스가 종료되어 로컬 학습을 멈춥니다.")
+                utility = -1
+                break
             
         self.total_train_time += time.time()-start
 
-        if terminate_flag.is_set():
-            utility = -1
-        else :
+        if not terminate_flag.is_set() :
             #utility = math.sqrt(epoch_train_loss / self.len_local_dataset) * self.len_local_dataset
             utility = epoch_train_loss / len(dataloader)
         printLog(f"CLIENT {self.id}", f"local utility: {utility}")
@@ -140,7 +143,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         local_model_info.append(self.local_model_version)
         local_model_info = torch.tensor(local_model_info)
         
-        if not terminate_FL_flag.is_set() or terminate_FL_flag == None :
+        if utility>-1 or terminate_FL_flag == None or not terminate_FL_flag.is_set():
             dist.send(tensor=local_model_info, dst=0)
 
     
@@ -155,6 +158,6 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
             printLog(f"CLIENT {self.id}", "서버에게 종료 신호 받음")
             if isTerminate == 0:
                 printLog(f"CLIENT {self.id}", "서버에게 임시")
-                self.send_local_model_to_server(0)
+                self.send_local_model_to_server(-1)
 
 
