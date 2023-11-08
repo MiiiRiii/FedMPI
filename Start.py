@@ -3,6 +3,7 @@ from methods.CHAFL import CHAFL, CHAFLClient, CHAFLServer
 from methods.PowerOfChoice import PowerOfChoice, PowerOfChoiceClient, PowerOfChoiceServer
 from methods.SemiAsyncFL import SemiAsync, SemiAsyncClient, SemiAsyncServer
 from methods.SemiAsyncPM1 import SemiAsyncPM1, SemiAsyncPM1Client, SemiAsyncPM1Server
+from methods.FedAsync import FedAsync, FedAsyncClient, FedAsyncServer
 
 from utils.utils import printLog
 
@@ -56,6 +57,11 @@ def init_FL(FLgroup, args):
             method = SemiAsyncPM1.SemiAsyncPM1()
             Server = SemiAsyncPM1Server.SemiAsyncPM1Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
             Client = SemiAsyncPM1Client.SemiAsyncPM1Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
+
+        elif args.method=="FedAsync":
+            method = FedAsync.FedAsync()
+            Server = FedAsyncServer.FedAsyncServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            Client = FedAsyncClient.FedAsyncClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
         
         if WORLD_RANK == 0:
             if args.wandb_on == "True":
@@ -104,7 +110,7 @@ if __name__ == "__main__":
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--split", choices=['uniform', 'gaussian'], default='gaussian', type=str)
 
-    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d', 'SemiAsync', 'SemiAsyncPM1'], default='FedAvg', type=str)
+    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d', 'SemiAsync', 'SemiAsyncPM1', 'FedAsync'], default='FedAvg', type=str)
     parser.add_argument("--d", type=int)
     
     parser.add_argument("--wandb_on", choices=['True', 'False'], default='False', type=str)
