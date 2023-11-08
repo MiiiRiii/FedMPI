@@ -131,7 +131,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
         return utility
     
-    def send_local_model_to_server(self, utility):
+    def send_local_model_to_server(self, utility, terminate_FL_flag):
         self.current_local_epoch = self.local_epoch
 
         flatten_model=TensorBuffer(list(self.model.state_dict().values()))
@@ -140,7 +140,8 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         local_model_info.append(self.local_model_version)
         local_model_info = torch.tensor(local_model_info)
         
-        dist.send(tensor=local_model_info, dst=0)
+        if not terminate_FL_flag.is_set() :
+            dist.send(tensor=local_model_info, dst=0)
 
     
     
