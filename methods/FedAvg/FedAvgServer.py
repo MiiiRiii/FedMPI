@@ -44,7 +44,6 @@ class FedAvgServer:
         init_weight(self.model)
         
         # local model을 받기 위한 버퍼 생성
-        printLog("SERVER", f"빈 local model을 생성합니다.")
         self.flatten_client_models = {}
         
         for idx in range(1,self.num_clients+1):

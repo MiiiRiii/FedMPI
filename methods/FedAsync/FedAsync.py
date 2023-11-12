@@ -19,7 +19,6 @@ class FedAsync(object):
             Client.train()
             Client.send_local_model_to_server()
 
-        Client.terminate()
         dist.barrier()
 
     def runServer(self, Server):
@@ -35,30 +34,27 @@ class FedAsync(object):
             
             current_round_start = time.time()
             
-            client_idx = Server.wait_until_can_update_global_model()
-            Server.global_update(client_idx)
+            sent_client_idx = Server.wait_until_can_update_global_model()
+            Server.global_update(sent_client_idx)
             
             global_acc, global_loss = Server.evaluate()
             
             printLog("SERVER", f"{Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
 
-
-            Server. send_global_model_to_client(client_idx)
             
             if Server.wandb_on=="True":
                 wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-current_round_start, "wall_time(m)":(time.time()-current_FL_start)/60})
 
             if global_acc>=Server.target_accuracy:
-                dist.broadcast(tensor=torch.tensor([0.]), src=0, group=Server.FLgroup)
                 printLog("SERVER", f"목표한 정확도에 도달했으며, 수행한 라운드 수는 {Server.current_round}회 입니다.")
-                break
+                break   
             elif Server.current_round == Server.target_rounds:
-                dist.broadcast(tensor=torch.tensor([0.]), src=0, group=Server.FLgroup)
                 printLog("SERVER", f"목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
                 break
-
+            else:
+                Server.send_global_model_to_client(sent_client_idx)
         
-
+        Server.terminate_FL(sent_client_idx)
         printLog(f"SERVER", "FL 프로세스를 종료합니다.")
         dist.barrier()
 

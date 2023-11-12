@@ -24,8 +24,8 @@ class FedAsyncClient(FedAvgClient.FedAvgClient):
 
         model_state_dict = self.model.state_dict()
         flatten_model = TensorBuffer(list(model_state_dict.values()))
-        global_model_info = torch.zeros(len(flatten_model.buffer)+1)
-
+        global_model_info = torch.zeros(len(flatten_model.buffer)+1)  
+        
         dist.recv(tensor=global_model_info, src=0) #global_model_info = [flatten_model, model version]
         
         flatten_model.buffer = global_model_info[:-1]
@@ -71,4 +71,6 @@ class FedAsyncClient(FedAvgClient.FedAvgClient):
         local_model_info = flatten_model.buffer.tolist()
         local_model_info.append(self.local_model_version)
         local_model_info = torch.tensor(local_model_info)
+        
         dist.send(tensor=local_model_info, dst=0)
+        

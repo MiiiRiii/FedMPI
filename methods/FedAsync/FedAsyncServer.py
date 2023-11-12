@@ -15,24 +15,25 @@ from torch.utils.data import DataLoader
 class FedAsyncServer(FedAvgServer.FedAvgServer):
     def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup):
         super().__init__(num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup)
-        self.terminate_FL = threading.Event()
-        self.terminate_FL.clear()
+        self.terminate_FL_flag = threading.Event()
+        self.terminate_FL_flag.clear()
         self.received_client_idx = []
         self.local_model_version = {}
         self.num_received_client = 0
+        self.terminated_clients=[]
 
         self.received_client_idx_lock = threading.Lock()
         self.num_received_client_lock = threading.Lock()
+        self.is_background_thread_terminate=False
 
     def receive_local_model_from_any_clients(self):
-        while not self.terminate_FL.is_set():
+        while not self.terminate_FL_flag.is_set():
             temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
             local_model_info = torch.zeros(len(temp_local_model.buffer)+1)
             req = dist.irecv(tensor=local_model_info)
             req.wait()
-            if self.terminate_FL.is_set():
-                break
-            printLog("SERVER", f"CLIENT{req.source_rank()}에게 로컬 모델을 받음")
+
+            printLog("SERVER", f"백그라운드 스레드에서 CLIENT{req.source_rank()}에게 로컬 모델을 받음")
             
             temp_local_model.buffer = local_model_info[:-1]
             self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
@@ -41,7 +42,7 @@ class FedAsyncServer(FedAvgServer.FedAvgServer):
                 self.received_client_idx.append(req.source_rank())
                 self.num_received_client += 1
 
-        printLog("SERVER", "백그라운드 스레드를 종료합니다.")
+        self.is_background_thread_terminate=True
 
     
     def wait_until_can_update_global_model(self):
@@ -75,10 +76,43 @@ class FedAsyncServer(FedAvgServer.FedAvgServer):
         self.model.load_state_dict(interpoloated_weights)
 
     def send_global_model_to_client(self, client_idx):
-        selected_client_idx = [client_idx]
         flatten_model = TensorBuffer(list(self.model.state_dict().values()))
         global_model_info = flatten_model.buffer.tolist()
         global_model_info.append(self.current_round)
         global_model_info = torch.tensor(global_model_info)
 
         dist.send(tensor=global_model_info, dst=client_idx)
+        
+    def terminate_FL(self, sent_client_idx):
+        self.terminate_FL_flag.set()
+        
+        flatten_model = TensorBuffer(list(self.model.state_dict().values()))
+        global_model_info = flatten_model.buffer.tolist()
+        global_model_info.append(-1)
+        global_model_info = torch.tensor(global_model_info)
+
+        temp_local_model = TensorBuffer(list(self.model.state_dict().values()))
+        local_model_info = torch.zeros(len(temp_local_model.buffer)+1)
+
+
+        while not self.is_background_thread_terminate :
+            pass
+        
+        self.received_client_idx.insert(0, sent_client_idx)
+        for idx in self.received_client_idx:
+            dist.send(tensor=global_model_info, dst=idx)
+            printLog("SERVER", f"CLIENT {idx}에게 끝났음을 알림")
+            self.terminated_clients.append(idx)
+
+        
+        printLog("SERVER", "백그라운드 스레드 종료됨")
+        while len(self.terminated_clients) < self.num_clients :
+            printLog("SERVER", f"{local_model_info.size()}")
+            req=dist.irecv(tensor=local_model_info)
+            req.wait()
+            sent_client_idx = req.source_rank()
+            
+            dist.send(tensor=global_model_info, dst=sent_client_idx)
+            self.terminated_clients.append(sent_client_idx)
+
+        
