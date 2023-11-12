@@ -205,6 +205,4 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
                 self.terminated_clients.append(req.source_rank())
 
         dist.barrier()
-        #printLog("SERVER", "클라이언트1에게 종료 전송")
-        #dist.send(tensor=torch.zeros(1), dst=1)
         

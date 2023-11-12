@@ -74,6 +74,7 @@ def init_FL(FLgroup, args):
                     "dataset": args.dataset,
                     "data_split": args.split,
                     "method": args.method,
+                    "selection_ratio": args.selection_ratio,
                     "d": args.d
                 })
             printLog("MAIN",f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
