@@ -74,10 +74,6 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
                 self.local_model_version = int(global_model_info[-3].item())
                 self.last_global_loss = global_model_info[-2].item()
-
-                #local_loss = super().evaluate()
-                #printLog(f"CLIENT {self.id}", f"local loss: {local_loss}")
-
                 is_ongoing_local_update_flag.set() # 로컬 업데이트 이제 시작해야 하니까 flag set 해줌
 
         printLog(f"CLIENT {self.id}", "백그라운드 스레드 종료")
@@ -102,8 +98,6 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                 self.current_local_epoch -= 1
                 self.receive_global_model_flag.clear()
                 self.model = copy.deepcopy(self.received_global_model)
-                #local_loss = super().evaluate()
-                #printLog(f"CLIENT {self.id}", f"local loss: {local_loss}")
                 continue
 
             for data, labels in dataloader:
@@ -128,7 +122,6 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         self.total_train_time += time.time()-start
 
         if not terminate_flag.is_set() :
-            #utility = math.sqrt(epoch_train_loss / self.len_local_dataset) * self.len_local_dataset
             utility = epoch_train_loss / len(dataloader)
         printLog(f"CLIENT {self.id}", f"local utility: {utility}")
 
@@ -156,15 +149,4 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         dist.send(tensor = local_model_info, dst=0)
 
         dist.barrier()
-        """
-        # 클라이언트 1이 대표로 실행
-        printLog(f"CLIENT {self.id}", "client terminate 실행")
-        if self.id == 1:
-            isTerminate = torch.zeros(1)
-            dist.recv(tensor = isTerminate, src=0)
-            printLog(f"CLIENT {self.id}", "서버에게 종료 신호 받음")
-            if isTerminate == 0:
-                printLog(f"CLIENT {self.id}", "서버에게 임시")
-                self.send_local_model_to_server(0)
-        """
 

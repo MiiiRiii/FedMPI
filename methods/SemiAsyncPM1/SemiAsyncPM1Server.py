@@ -46,13 +46,12 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
                 
                 temp_local_model.buffer = local_model_info[:-2]
                 self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
-                printLog("SERVER", f"CLIENT {req.source_rank()}에게 로컬 모델을 받음")
-                
-                self.local_utility[req.source_rank()] = local_model_info[-2]            
-
+                self.local_utility[req.source_rank()] = local_model_info[-2]  
                 self.local_model_version[req.source_rank()] = local_model_info[-1]
-                printLog("SERVER", f"CLIENT {req.source_rank()}의 로컬 모델 버전: {local_model_info[-1].item()}")
-                
+
+                printLog("SERVER", f"CLIENT {req.source_rank()}에게 로컬 모델을 받음\
+                                    => 로컬 모델 버전: {local_model_info[-1].item()}\
+                                    => 로컬 utility: {local_model_info[-2]}")      
 
         printLog("SERVER" ,"백그라운드 스레드를 종료합니다.")
 
@@ -149,24 +148,17 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         """
         ########## PM2 ##########
         data_coefficient = super().calculate_coefficient(picked_client_idx)
-        utility_coefficient = copy.deepcopy(self.local_utility)
-
-        data_coeff_min = min(data_coefficient.values())
-        data_coeff_max = max(data_coefficient.values())
-        util_coeff_min = min(utility_coefficient.values())
-        util_coeff_max = max(utility_coefficient.values())
-
-        data_coefficient_normalized = [(val-data_coeff_min)/(data_coeff_max-data_coeff_min) for val in data_coefficient]
-        utility_coefficient_normalized = [(val-data_coeff_min)/(util_coeff_max-util_coeff_min) for val in utility_coefficient]
         
-        data_weight = 0.5
-        util_weight = 0.5
 
-        combined = [data_weight * di + util_weight * ui for di, ui in zip(data_coefficient_normalized, utility_coefficient_normalized)]
+        utility_sum=0
+        for idx in picked_client_idx:
+            utility_sum += self.local_utility[idx]
 
-        sum_combined = sum(combined)
-
-        coefficient = [ci / sum_combined for ci in combined]
+        utility_coefficient = {}
+        for idx in picked_client_idx:
+            utility_coefficient[idx] = self.local_utility[idx]/utility_sum
+        
+        coefficient = [(data_coefficient[idx] + utility_coefficient[idx]/2 for idx in picked_client_idx)]
         #########################
         """
 
