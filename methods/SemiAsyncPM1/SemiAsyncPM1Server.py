@@ -49,8 +49,8 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
                 self.local_utility[req.source_rank()] = local_model_info[-2]  
                 self.local_model_version[req.source_rank()] = local_model_info[-1]
 
-                printLog("SERVER", f"CLIENT {req.source_rank()}에게 로컬 모델을 받음\
-                                    => 로컬 모델 버전: {local_model_info[-1].item()}\
+                printLog("SERVER", f"CLIENT {req.source_rank()}에게 로컬 모델을 받음 \n\
+                                    => 로컬 모델 버전: {local_model_info[-1].item()} \n\
                                     => 로컬 utility: {local_model_info[-2]}")      
 
         printLog("SERVER" ,"백그라운드 스레드를 종료합니다.")
@@ -141,11 +141,12 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
 
     def calculate_coefficient(self, picked_client_idx):
         
+        """
         ########## PM1 ##########
         coefficient = super().calculate_coefficient(picked_client_idx)
         #########################
-
         """
+        
         ########## PM2 ##########
         data_coefficient = super().calculate_coefficient(picked_client_idx)
         
@@ -160,7 +161,7 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         
         coefficient = [(data_coefficient[idx] + utility_coefficient[idx]/2 for idx in picked_client_idx)]
         #########################
-        """
+        
 
         return coefficient
     
