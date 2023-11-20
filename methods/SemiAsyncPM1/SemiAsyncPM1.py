@@ -65,10 +65,10 @@ class SemiAsyncPM1(object):
             
             picked_client_info=""
             for idx, client_idx in enumerate(picked_client_idx):
-                picked_client_info += f"                                 => 클라이언트{client_idx}의 staleness: {Server.current_round - Server.local_model_version[client_idx]}, 로컬 utility: {Server.local_utility[client_idx]}\n"
+                picked_client_info += f"                               => 클라이언트{client_idx}의 staleness: {Server.current_round - Server.local_model_version[client_idx]}, 로컬 utility: {Server.local_utility[client_idx]}, coefficient: {coefficient[client_idx]}\n"
             printLog("SERVER", f"{Server.current_round}번째 글로벌 모델 \n\
                                  => test_accuracy: {round(global_acc*100,4)}% \n\
-                                 => test_loss: {round(global_loss,4)}\n\{picked_client_info}")
+                                 => test_loss: {round(global_loss,4)}\n {picked_client_info}")
 
             if Server.wandb_on=="True":
                 wandb.log({"test_accuracy": round(global_acc*100,4), "test_loss":round(global_loss,4), "runtime_for_one_round":time.time()-current_round_start, "wall_time(m)":(time.time()-current_FL_start)/60})

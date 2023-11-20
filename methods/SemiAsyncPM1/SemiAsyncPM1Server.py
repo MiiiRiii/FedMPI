@@ -158,8 +158,11 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         utility_coefficient = {}
         for idx in picked_client_idx:
             utility_coefficient[idx] = self.local_utility[idx]/utility_sum
+
+        coefficient={}
+        for idx in picked_client_idx:
+            coefficient[idx] = (data_coefficient[idx] + utility_coefficient[idx])/2
         
-        coefficient = [(data_coefficient[idx] + utility_coefficient[idx]/2 for idx in picked_client_idx)]
         #########################
         
 
