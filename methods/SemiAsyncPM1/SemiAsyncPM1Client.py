@@ -35,36 +35,32 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         model_state_dict = self.model.state_dict()
 
         flatten_model = TensorBuffer(list(model_state_dict.values()))
-        global_model_info = torch.zeros(len(flatten_model.buffer)+3)
+        self.global_model_info = torch.zeros(len(flatten_model.buffer)+3)
 
         while True:
-            dist.recv(tensor=global_model_info, src=0) #global_model_info=[flatten_model.buffer, 글로벌 모델 버전(라운드), global loss]
+            dist.recv(tensor=self.global_model_info, src=0) #global_model_info=[flatten_model.buffer, 글로벌 모델 버전(라운드), global loss]
             
-            flatten_model.buffer = global_model_info[:-3]
+            flatten_model.buffer = self.global_model_info[:-3]
             flatten_model.unpack(model_state_dict.values())
-            am_i_picked = global_model_info[-1].item()
+            am_i_picked = self.global_model_info[-1].item()
 
-            if int(global_model_info[-3].item()) == -1: #FL 프로세스 종료
+            if int(self.global_model_info[-3].item()) == -1: #FL 프로세스 종료
                 terminate_FL_flag.set()
                 break
 
-            elif is_ongoing_local_update_flag.is_set() and int(global_model_info[-3].item())>=2: # 로컬 학습 중에 글로벌 모델을 받는 경우
+            elif is_ongoing_local_update_flag.is_set() and int(self.global_model_info[-3].item())>=2: # 로컬 학습 중에 글로벌 모델을 받는 경우
 
-                if global_model_info[-2].item() < self.last_global_loss: # 새로운 글로벌 모델이 더 퀄리티가 좋은 경우
+                if self.global_model_info[-2].item() < self.last_global_loss: # 새로운 글로벌 모델이 더 퀄리티가 좋은 경우
 
 
-                    printLog(f"CLIENT {self.id}", f"gl: {global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받습니다.")
+                    printLog(f"CLIENT {self.id}", f"gl: {self.global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받습니다.")
 
                     self.received_global_model.load_state_dict(model_state_dict)
-                    
-                    self.local_model_version = int(global_model_info[-3].item())
-                    self.last_global_loss = global_model_info[-2].item()
-
                     self.receive_global_model_flag.set()
 
 
                 else: # 현재 학습 중인 모델이 더 퀄리티가 좋은 경우
-                    printLog(f"CLIENT {self.id}", f"gl: {global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받지 않고 로컬 업데이트를 이어갑니다.")
+                    printLog(f"CLIENT {self.id}", f"gl: {self.global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받지 않고 로컬 업데이트를 이어갑니다.")
                     continue
 
             elif am_i_picked==1: # 처음 라운드이거나 정상적으로 로컬 모델을 업로드 한 후 글로벌 모델을 기다리고 있는 경우
@@ -72,8 +68,8 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                 
                 self.model.load_state_dict(model_state_dict)
 
-                self.local_model_version = int(global_model_info[-3].item())
-                self.last_global_loss = global_model_info[-2].item()
+                self.local_model_version = int(self.global_model_info[-3].item())
+                self.last_global_loss = self.global_model_info[-2].item()
                 is_ongoing_local_update_flag.set() # 로컬 업데이트 이제 시작해야 하니까 flag set 해줌
 
         printLog(f"CLIENT {self.id}", "백그라운드 스레드 종료")
@@ -96,8 +92,12 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                 e=0
                 epoch_train_loss = 0.0
                 self.current_local_epoch -= 1
-                self.receive_global_model_flag.clear()
+                
+                self.local_model_version = int(self.global_model_info[-3].item())
+                self.last_global_loss = self.global_model_info[-2].item()
                 self.model = copy.deepcopy(self.received_global_model)
+                
+                self.receive_global_model_flag.clear()
                 continue
 
             for data, labels in dataloader:

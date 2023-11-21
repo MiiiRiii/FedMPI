@@ -13,6 +13,7 @@ import copy
 from torch.utils.data import DataLoader
 from torch.optim import SGD
 from torch.nn import CrossEntropyLoss
+from collections import OrderedDict
 
 class SemiAsyncPM3Client(FedAvgClient.FedAvgClient):
     def __init__(self, num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup):
@@ -54,14 +55,30 @@ class SemiAsyncPM3Client(FedAvgClient.FedAvgClient):
 
 
                     printLog(f"CLIENT {self.id}", f"gl: {self.global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받습니다.")
-
+                    
                     self.received_global_model.load_state_dict(model_state_dict)
                     self.receive_global_model_flag.set()
 
 
                 else: # 현재 학습 중인 모델이 더 퀄리티가 좋은 경우
+                    """
                     printLog(f"CLIENT {self.id}", f"gl: {self.global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받지 않고 로컬 업데이트를 이어갑니다.")
                     continue
+                    """
+                    self.received_global_model.load_state_dict(model_state_dict)
+                    received_global_model_state_dict = self.received_global_model.state_dict()
+                    local_model_state_dict = self.model.state_dict()
+
+                    interpolated_weights = OrderedDict()
+
+                    for key in received_global_model_state_dict.keys():
+                        interpolated_weights[key] = 0.5 * local_model_state_dict[key]
+                    for key in local_model_state_dict.keys():
+                        interpolated_weights[key] += 0.5 * received_global_model_state_dict[key]
+
+                    self.model.load_state_dict(interpolated_weights)
+                    printLog(f"CLIENT {self.id}", f"gl: {self.global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 반만 반영한 후 로컬 업데이트를 이어갑니다.")
+
 
             elif am_i_picked==1: # 처음 라운드이거나 정상적으로 로컬 모델을 업로드 한 후 글로벌 모델을 기다리고 있는 경우
                 printLog(f"CLIENT {self.id}", f"처음 라운드이거나 정상적으로 로컬 모델을 업로드 했기 때문에 글로벌 모델을 받습니다.")
