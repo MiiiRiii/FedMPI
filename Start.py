@@ -5,6 +5,7 @@ from methods.SemiAsyncFL import SemiAsync, SemiAsyncClient, SemiAsyncServer
 from methods.SemiAsyncPM1 import SemiAsyncPM1, SemiAsyncPM1Client, SemiAsyncPM1Server
 from methods.FedAsync import FedAsync, FedAsyncClient, FedAsyncServer
 from methods.LossUtilityFedAvg import LossUtilityFedAvg, LossUtilityFedAvgClient, LossUtilityFedAvgServer
+from methods.SemiAsyncPM3 import SemiAsyncPM3, SemiAsyncPM3Client, SemiAsyncPM3Server
 
 from utils.utils import printLog
 
@@ -68,6 +69,11 @@ def init_FL(FLgroup, args):
             method = LossUtilityFedAvg.LossUtilityFedAvg()
             Server = LossUtilityFedAvgServer.LossUtilityFedAvgServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
             Client = LossUtilityFedAvgClient.LossUtilityFedAvgClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
+
+        elif args.method=="SemiAsyncPM3":
+            method = SemiAsyncPM3.SemiAsyncPM3()
+            Server = SemiAsyncPM3Server.SemiAsyncPM3Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            Client = SemiAsyncPM3Client.SemiAsyncPM3Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)   
         
         if WORLD_RANK == 0:
             if args.wandb_on == "True":
@@ -118,7 +124,7 @@ if __name__ == "__main__":
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--split", choices=['uniform', 'gaussian'], default='gaussian', type=str)
 
-    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d', 'SemiAsync', 'SemiAsyncPM1', 'FedAsync','LossUtilityFedAvg'], default='FedAvg', type=str)
+    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d', 'SemiAsync', 'SemiAsyncPM1', 'FedAsync','LossUtilityFedAvg', 'SemiAsyncPM3'], default='FedAvg', type=str)
     parser.add_argument("--d", type=int)
     
     parser.add_argument("--wandb_on", choices=['True', 'False'], default='False', type=str)
