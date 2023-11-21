@@ -141,7 +141,7 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
 
     def calculate_coefficient(self, picked_client_idx):
         
-        
+        """
         ########## PM1 ##########
         coefficient = super().calculate_coefficient(picked_client_idx)
         #########################
@@ -150,21 +150,30 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
         ########## PM2 ##########
         data_coefficient = super().calculate_coefficient(picked_client_idx)
         
+        refined_utility_sum=0
+        decay_coefficient = 0.9
 
-        utility_sum=0
+        refined_local_utility={}
+
         for idx in picked_client_idx:
-            utility_sum += self.local_utility[idx]
+            stalness = self.current_round - self.local_model_version[idx]
+            refined_local_utility[idx] = self.local_utility[idx]*(decay_coefficient**(stalness))
+       
+        for idx in picked_client_idx:
+            refined_utility_sum += refined_local_utility[idx]
 
         utility_coefficient = {}
+        
         for idx in picked_client_idx:
-            utility_coefficient[idx] = self.local_utility[idx]/utility_sum
+            utility_coefficient[idx] = refined_local_utility[idx]/refined_utility_sum
 
         coefficient={}
         for idx in picked_client_idx:
             coefficient[idx] = (data_coefficient[idx] + utility_coefficient[idx])/2
         
         #########################
-        """
+        
+
 
         return coefficient
     
