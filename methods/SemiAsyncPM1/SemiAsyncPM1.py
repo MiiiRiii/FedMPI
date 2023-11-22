@@ -56,7 +56,7 @@ class SemiAsyncPM1(object):
 
             picked_client_idx  = Server.wait_until_can_update_global_model(num_local_model_limit)
 
-            #Server.refine_received_local_model(picked_client_idx )            
+            Server.refine_received_local_model(picked_client_idx )            
 
             coefficient = Server.calculate_coefficient(picked_client_idx )
             Server.average_aggregation(picked_client_idx , coefficient)

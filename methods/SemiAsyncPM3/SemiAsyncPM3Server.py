@@ -6,7 +6,7 @@ import torch.distributed as dist
 import torch
 import copy
 import threading
-import random
+import gc
 
 from collections import OrderedDict
 from torch.nn import CrossEntropyLoss
@@ -22,51 +22,36 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
         self.num_cached_local_model_lock = threading.Lock()
         self.terminate_FL = threading.Event()
         self.terminate_FL.clear()
-        self.local_utility = {}
-        self.terminated_clients = []
 
     def receive_local_model_from_any_clients(self):
         while not self.terminate_FL.is_set():
-            
             temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
-            local_model_info = torch.zeros(len(temp_local_model.buffer)+2)
-
-            req = dist.irecv(tensor=local_model_info) # [local model, utility, local_model version]
+            req = dist.irecv(tensor=temp_local_model.buffer)
             req.wait()
-
-            if local_model_info[-2].item()==-1:
-                printLog("SERVER", f"CLIENT {req.source_rank()}가 FL프로세스를 종료함")
-                self.terminated_clients.append(req.source_rank())
-
             if self.terminate_FL.is_set():
                 break
+            printLog("SERVER", f"CLIENT{req.source_rank()}에게 로컬 모델을 받음")
+            self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
                 self.cached_client_idx.append(req.source_rank())
                 self.num_cached_local_model += 1
-                
-                temp_local_model.buffer = local_model_info[:-2]
-                self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
-                self.local_utility[req.source_rank()] = local_model_info[-2]  
-                self.local_model_version[req.source_rank()] = local_model_info[-1]
-
-                printLog("SERVER", f"CLIENT {req.source_rank()}에게 로컬 모델을 받음 \n\
-                                    => 로컬 모델 버전: {local_model_info[-1].item()} \n\
-                                    => 로컬 utility: {local_model_info[-2]}")      
 
         printLog("SERVER" ,"백그라운드 스레드를 종료합니다.")
 
-    def wait_until_can_update_global_model(self, minimum_picked_client):
+    def wait_until_can_update_global_model(self, num_local_model_limit):
         printLog("SERVER" , f"현재까지 받은 로컬 모델 개수: {self.num_cached_local_model}")
         while True:
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
-                if self.num_cached_local_model >= minimum_picked_client:
+                if self.num_cached_local_model >= num_local_model_limit:
 
+                    self.num_cached_local_model -= num_local_model_limit
                     picked_client_idx = []
                     
-                    for idx in range(self.num_cached_local_model):
+                    for idx in range(num_local_model_limit):
                         picked_client_idx.append(self.cached_client_idx.pop(0))
 
-                    self.num_cached_local_model = 0
+                    
+                    printLog("SERVER", f"picked client list : {picked_client_idx}")
                     
                     break
 
@@ -95,23 +80,12 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
 
             self.flatten_client_models[idx] = TensorBuffer(list(interpolated_weights.values()))
 
-    def send_global_model_to_clients(self, clients_idx, picked_clients_idx, global_loss):
+    def send_global_model_to_clients(self, sucess_uploaded_client_idx):
         flatten_model = TensorBuffer(list(self.model.state_dict().values()))
-
-        shuffled_clients_idx = copy.deepcopy(clients_idx)
-        random.shuffle(shuffled_clients_idx)
-
-        global_model_info = flatten_model.buffer.tolist()
-        global_model_info.append(self.current_round)
-        global_model_info.append(global_loss)
-        global_model_info = torch.tensor(global_model_info)
-
-        for idx in shuffled_clients_idx:
-            if idx in picked_clients_idx:
-                dist.send(tensor=torch.cat([global_model_info, torch.tensor([1])]), dst=idx) # 글로벌 모델, 현재 라운드, global loss 전송, 선택되었음 전송
-            else:
-                dist.send(tensor=torch.cat([global_model_info, torch.tensor([0])]), dst=idx) # 글로벌 모델, 현재 라운드, global loss 전송, 선택되지 않음 전송
-
+        for idx in sucess_uploaded_client_idx:
+            dist.send(tensor=torch.tensor(self.current_round).type(torch.FloatTensor), dst=idx) # 모델 버전 전송
+            dist.send(tensor=flatten_model.buffer, dst=idx) # 글로벌 모델 전송
+            self.local_model_version[idx]=self.current_round
 
     def evaluate_local_model(self, client_idx):
         loss_function = CrossEntropyLoss()
@@ -139,67 +113,11 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
 
         printLog("Server", f"CLIENT{client_idx}의 로컬 모델 평가 결과 : acc=>{test_accuracy}, test_loss=>{test_loss}")
 
-    def calculate_coefficient(self, picked_client_idx):
-        
-        
-        ########## PM1 ##########
-        coefficient = super().calculate_coefficient(picked_client_idx)
-        #########################
-        
-        """
-        ########## PM2 ##########
-        data_coefficient = super().calculate_coefficient(picked_client_idx)
-        
-
-        utility_sum=0
-        for idx in picked_client_idx:
-            utility_sum += self.local_utility[idx]
-
-        utility_coefficient = {}
-        for idx in picked_client_idx:
-            utility_coefficient[idx] = self.local_utility[idx]/utility_sum
-
-        coefficient={}
-        for idx in picked_client_idx:
-            coefficient[idx] = (data_coefficient[idx] + utility_coefficient[idx])/2
-        
-        #########################
-        """
-        
-
-        return coefficient
-    
-    def average_aggregation(self, selected_client_idx, coefficient):
-
-        picked_client_info = ""
-        for idx in selected_client_idx:
-            picked_client_info += f"CLIENT {idx}의 staleness: {self.current_round - self.local_model_version[idx]}\n"
-        printLog("SERVER", f"picked clients info: \n{picked_client_info}")
-        super().average_aggregation(selected_client_idx, coefficient)
-
-
-    def terminate(self, clients_idx):
+    def terminate(self):
         self.terminate_FL.set()
+        dist.send(tensor=torch.tensor(0).type(torch.FloatTensor), dst=1)
 
-        temp_global_model=TensorBuffer(list(self.model.state_dict().values()))
-        global_model_info = torch.zeros(len(temp_global_model.buffer)+3)
-        global_model_info[-3] = -1
-
-        for idx in clients_idx:
-            printLog("SERVER", f"CLIENT {idx}에게 끝났음을 알림")
-            dist.send(tensor=global_model_info, dst=idx) # 종료되었음을 알림
-
-        temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
-        local_model_info = torch.zeros(len(temp_local_model.buffer)+2)
-
-        
-        while len(self.terminated_clients) < self.num_clients:
-            req = dist.irecv(tensor=local_model_info)
-            req.wait()
-            if local_model_info[-2].item()==-1 :
-                printLog("SERVER", f"CLIENT {req.source_rank()}가 FL프로세스를 종료함")
-                
-                self.terminated_clients.append(req.source_rank())
-
-        dist.barrier()
-        
+    def average_aggregation(self, selected_client_idx, coefficient):
+        for idx in selected_client_idx:
+            printLog("SERVER", f"CLIENT {idx}의 staleness는 {self.current_round - self.local_model_version[idx]}입니다.")
+        return super().average_aggregation(selected_client_idx, coefficient)

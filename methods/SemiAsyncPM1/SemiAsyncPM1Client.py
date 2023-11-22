@@ -27,9 +27,6 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         self.replace_global_model_during_local_update = threading.Event() # 학습 중간에 글로벌 모델로 교체하는지 확인하는 용도
         self.replace_global_model_during_local_update.clear()
 
-        self.interpolate_global_model_during_local_update = threading.Event()
-        self.interpolate_global_model_during_local_update.clear()
-
 
     def receive_global_model_from_server(self, is_ongoing_local_update_flag, terminate_FL_flag):
         
@@ -54,8 +51,6 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
             elif is_ongoing_local_update_flag.is_set() and int(self.global_model_info[-3].item())>=2: # 로컬 학습 중에 글로벌 모델을 받는 경우
 
                 if self.global_model_info[-2].item() < self.last_global_loss: # 새로운 글로벌 모델이 더 퀄리티가 좋은 경우
-
-
                     printLog(f"CLIENT {self.id}", f"gl: {self.global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받습니다.")
 
                     self.received_global_model.load_state_dict(model_state_dict)
@@ -63,13 +58,8 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
 
                 else: # 현재 학습 중인 모델이 더 퀄리티가 좋은 경우
-                    """
                     printLog(f"CLIENT {self.id}", f"gl: {self.global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받지 않고 로컬 업데이트를 이어갑니다.")
                     continue
-                    """
-                    printLog(f"CLIENT {self.id}", f"gl: {self.global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 반만 반영한 후 로컬 업데이트를 이어갑니다.")
-                    self.received_global_model.load_state_dict(model_state_dict)
-                    self.interpolate_global_model_during_local_update.set()
                     
 
             elif am_i_picked==1: # 처음 라운드이거나 정상적으로 로컬 모델을 업로드 한 후 글로벌 모델을 기다리고 있는 경우
@@ -108,23 +98,6 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                 
                 self.replace_global_model_during_local_update.clear()
                 continue
-
-            if self.interpolate_global_model_during_local_update.is_set():
-                received_global_model_state_dict = self.received_global_model.state_dict()
-                local_model_state_dict = self.model.state_dict()
-
-                interpolated_weights = OrderedDict()
-
-                for key in received_global_model_state_dict.keys():
-                    interpolated_weights[key] = (local_model_state_dict[key] + received_global_model_state_dict[key])/2
-            
-                self.model.load_state_dict(interpolated_weights)
-                self.last_global_loss = (self.global_model_info[-2].item() + self.last_global_loss)/2
-                self.current_local_epoch -= e
-                e=0
-                epoch_train_loss=0.0
-            
-                self.interpolate_global_model_during_local_update.clear()
 
             for data, labels in dataloader:
                 optimizer.zero_grad()
