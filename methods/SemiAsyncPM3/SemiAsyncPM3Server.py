@@ -155,11 +155,9 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
 
     def terminate(self):
         self.terminate_FL.set()
-
-        
-        global_model_info = torch.tensor(-1).type(torch.FloatTensor)
-        for idx in self.clients_idx:
-            dist.send(tensor=global_model_info, dst=idx)
+        #global_model_info = torch.tensor(-1).type(torch.FloatTensor)
+        #for idx in self.clients_idx:
+            #dist.send(tensor=global_model_info, dst=idx)
         dist.barrier()
 
 
