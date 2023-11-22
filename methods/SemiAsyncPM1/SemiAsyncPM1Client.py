@@ -120,6 +120,10 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
             
                 self.model.load_state_dict(interpolated_weights)
                 self.last_global_loss = (self.global_model_info[-2].item() + self.last_global_loss)/2
+                self.current_local_epoch -= e
+                e=0
+                epoch_train_loss=0.0
+            
                 self.interpolate_global_model_during_local_update.clear()
 
             for data, labels in dataloader:
