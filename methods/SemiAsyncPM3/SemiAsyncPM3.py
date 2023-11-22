@@ -18,7 +18,7 @@ class SemiAsyncPM3(object):
             Client.train()
             Client.send_local_model_to_server()
 
-        Client.terminate()
+        
         dist.barrier()
             
     def runServer(self, Server):

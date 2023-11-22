@@ -121,15 +121,6 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
 
         printLog("Server", f"CLIENT{client_idx}의 로컬 모델 평가 결과 : acc=>{test_accuracy}, test_loss=>{test_loss}")
 
-    def terminate(self):
-        self.terminate_FL.set()
-        flatten_model=TensorBuffer(list(self.model.state_dict().values()))
-        global_model_info = torch.zeros(len(flatten_model.buffer)+1)
-        global_model_info[-1]=-1
-        for idx in self.clients_idx:
-            dist.send(tensor=global_model_info, dst=idx)
-        dist.barrier()
-
     def average_aggregation(self, selected_client_idx, coefficient):
         for idx in selected_client_idx:
             printLog("SERVER", f"CLIENT {idx}의 staleness는 {self.current_round - self.local_model_version[idx]}입니다.")
@@ -162,6 +153,13 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
         
         return min(next_num_picked_client, self.num_clients)
 
+    def terminate(self):
+        self.terminate_FL.set()
 
+        
+        global_model_info = torch.tensor(-1).type(torch.FloatTensor)
+        for idx in self.clients_idx:
+            dist.send(tensor=global_model_info, dst=idx)
+        dist.barrier()
 
 
