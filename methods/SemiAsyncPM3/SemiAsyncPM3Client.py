@@ -42,13 +42,7 @@ class SemiAsyncPM3Client(FedAvgClient.FedAvgClient):
         optimizer = SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
         
         dataloader = DataLoader(self.dataset, self.batch_size, shuffle=True)
-        """
-        ########## oort ##########
-        loss_function = CrossEntropyLoss(reduction='none')
-        epoch_train_loss = None
-        loss_decay = 0.2
-        ##########################
-        """
+       
 
         ########## my ##########
         loss_function = CrossEntropyLoss()
@@ -60,27 +54,6 @@ class SemiAsyncPM3Client(FedAvgClient.FedAvgClient):
                 optimizer.zero_grad()
                 outputs = self.model.forward(data)
                 loss = loss_function(outputs, labels)
-                """
-                ########## oort ##########
-                temp_loss = 0.
-                loss_cnt = 1.
-
-                loss_list = loss.tolist()
-                for l in loss_list:
-                    temp_loss += l**2
-
-                loss_cnt = len(loss_list)
-
-                temp_loss = temp_loss/float(loss_cnt)
-    
-                if e==1: # only measure the loss of the first epoch
-                    if epoch_train_loss is None:
-                        epoch_train_loss = temp_loss
-                    else:
-                        epoch_train_loss = (1. - loss_decay) * epoch_train_loss + loss_decay * temp_loss
-                loss.mean().backward()
-                ##########################
-                """
 
                 ########## my ##########
                 if e==1:

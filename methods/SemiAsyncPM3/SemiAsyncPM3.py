@@ -25,8 +25,8 @@ class SemiAsyncPM3(object):
         current_FL_start = time.time()
         clients_idx = [idx for idx in range(1, Server.num_clients+1)]
         picked_client_idx =clients_idx # 학습 처음엔 모든 클라이언트에게 보냄
-        num_local_model_limit=int(Server.num_clients*Server.selection_ratio) # 한 라운드 동안 수신할 local model 최대 개수
-
+        minimum_num_picked_client=int(Server.num_clients*Server.selection_ratio) # 한 라운드 동안 수신할 local model 최대 개수
+        current_num_picked_client = minimum_num_picked_client
         listen_local_update = threading.Thread(target=Server.receive_local_model_from_any_clients, args=(), daemon=True)
         listen_local_update.start()
         # FL 프로세스 시작
@@ -37,7 +37,7 @@ class SemiAsyncPM3(object):
 
             Server.send_global_model_to_clients(picked_client_idx)
 
-            picked_client_idx  = Server.wait_until_can_update_global_model(num_local_model_limit)
+            picked_client_idx  = Server.wait_until_can_update_global_model(current_num_picked_client)
 
             Server.refine_received_local_model(picked_client_idx )            
 
@@ -66,7 +66,7 @@ class SemiAsyncPM3(object):
                     dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
                 break
 
-            Server.get_next_round_minimum_local_model(global_loss)
+            current_num_picked_client = Server.get_next_round_minimum_local_model(global_loss, current_num_picked_client, minimum_num_picked_client)
         
         Server.terminate()
         printLog(f"SERVER", "FL 프로세스를 종료합니다.")

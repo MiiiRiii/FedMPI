@@ -22,6 +22,10 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
         self.num_cached_local_model_lock = threading.Lock()
         self.terminate_FL = threading.Event()
         self.terminate_FL.clear()
+        
+        self.last_global_loss = 1.0
+        self.sum_global_loss_gap =0.0
+        self.delta=0.0
 
     def receive_local_model_from_any_clients(self):
         while not self.terminate_FL.is_set():
@@ -40,16 +44,20 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
 
     def wait_until_can_update_global_model(self, num_local_model_limit):
         printLog("SERVER" , f"현재까지 받은 로컬 모델 개수: {self.num_cached_local_model}")
+        # get most staled client
+
+        most_staled_client=self.local_model_version.index(min(self.local_model_version))+1
+        #printLog("SERVER", f"이번 라운드에서 {num_local_model_limit}개의 로컬 모델을 사용하며, 가장 stale 된 클라이언트의 ID는 {most_staled_client}입니다.")
+        printLog("SERVER", f"이번 라운드에서 {num_local_model_limit}개의 로컬 모델을 사용합니다.")
         while True:
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
                 if self.num_cached_local_model >= num_local_model_limit:
-
-                    self.num_cached_local_model -= num_local_model_limit
-                    picked_client_idx = []
                     
-                    for idx in range(num_local_model_limit):
+                    picked_client_idx = []
+                    for idx in range(self.num_cached_local_model):
                         picked_client_idx.append(self.cached_client_idx.pop(0))
-
+                    
+                    self.num_cached_local_model = 0
                     
                     printLog("SERVER", f"picked client list : {picked_client_idx}")
                     
@@ -121,3 +129,33 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
         for idx in selected_client_idx:
             printLog("SERVER", f"CLIENT {idx}의 staleness는 {self.current_round - self.local_model_version[idx]}입니다.")
         return super().average_aggregation(selected_client_idx, coefficient)
+    
+
+    def get_next_round_minimum_local_model(self, current_global_loss, current_num_picked_client, minimum_num_picked_client):
+
+        """
+        
+        # get current global_loss_gap
+        current_global_loss_gap = current_global_loss - self.last_global_loss
+
+        # get delta
+        self.sum_global_loss_gap += abs(current_global_loss_gap)
+        delta = self.sum_global_loss_gap/self.current_round
+
+        next_num_picked_client = minimum_num_picked_client
+        if delta < abs(current_global_loss_gap) and current_global_loss >0: # global loss가 증가했다면 aggregation에 더 많은 로컬 모델을 사용
+            next_num_picked_client=int(current_num_picked_client*(abs(current_global_loss_gap)/delta))
+            print("SERVER", f"current_global_loss_gap: {current_global_loss_gap}")
+            print("SERVER", f"delta: {delta}")
+        """
+        next_num_picked_client = minimum_num_picked_client 
+        if current_global_loss > self.last_global_loss:
+            next_num_picked_client = int(current_num_picked_client * current_global_loss / self.last_global_loss)
+
+        self.last_global_loss = current_global_loss
+        
+        return min(next_num_picked_client, self.num_clients)
+
+
+
+
