@@ -27,6 +27,8 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         self.replace_global_model_during_local_update = threading.Event() # 학습 중간에 글로벌 모델로 교체하는지 확인하는 용도
         self.replace_global_model_during_local_update.clear()
 
+        self.interpolate_global_model = threading.Event()
+        self.interpolate_global_model.clear()
 
     def receive_global_model_from_server(self, is_ongoing_local_update_flag, terminate_FL_flag):
         
@@ -59,6 +61,9 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
                 else: # 현재 학습 중인 모델이 더 퀄리티가 좋은 경우
                     printLog(f"CLIENT {self.id}", f"gl: {self.global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받지 않고 로컬 업데이트를 이어갑니다.")
+                    self.received_global_model.load_state_dict(model_state_dict)
+                    self.interpolate_global_model.set()
+
                     continue
                     
 
@@ -85,6 +90,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
         epoch_train_loss = 0.0
         e=0
+        local_coefficient = 0.9
 
         while e < self.current_local_epoch:
             if self.replace_global_model_during_local_update.is_set(): # 학습 중간에 글로벌 모델로 교체
@@ -98,6 +104,29 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                 
                 self.replace_global_model_during_local_update.clear()
                 continue
+
+            if self.interpolate_global_model.is_set():
+                self.current_local_epoch -= e
+                e=0
+                epoch_train_loss = 0.0
+
+                self.last_global_loss = self.global_model_info[-2].item()
+
+                global_model_state_dict = self.received_global_model.state_dict()
+                local_model_state_dict = self.model.state_dict()
+
+                interpolated_weigths = OrderedDict()
+
+                for key in global_model_state_dict.keys():
+                    interpolated_weigths[key] = (local_coefficient * local_model_state_dict[key]) + (1-local_coefficient)*global_model_state_dict[key]
+                #for key in global_model_state_dict.keys():
+                    #interpolated_weigths[key] += (1-local_coefficient) * global_model_state_dict[key]
+            
+                self.model.load_state_dict(interpolated_weigths)
+
+                continue
+                    
+            
 
             for data, labels in dataloader:
                 optimizer.zero_grad()
