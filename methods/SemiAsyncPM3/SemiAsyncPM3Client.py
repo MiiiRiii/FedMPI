@@ -1,5 +1,6 @@
 from methods.FedAvg import FedAvgClient
 from utils.utils import *
+from utils.model_utils import TensorBuffer
 
 import torch.distributed as dist
 
@@ -74,10 +75,12 @@ class SemiAsyncPM3Client(FedAvgClient.FedAvgClient):
     
     
     def terminate(self):
-        # 클라이언트 1이 대표로 실행
-        if self.id == 1:
-            isTerminate = torch.tensor(1).type(torch.FloatTensor)
-            dist.recv(tensor = isTerminate, src=0)
-            if isTerminate == 0:
-                self.send_local_model_to_server()
+        # 서버에게 FL 프로세스를 종료했음을 알리는 신호 
+        flatten_model=TensorBuffer(list(self.model.state_dict().values()))
+        local_model_info = flatten_model.buffer.tolist()
+        local_model_info.append(-1)
+        local_model_info = torch.tensor(local_model_info)
+        dist.send(tensor = local_model_info, dst=0)
+
+        dist.barrier()
             

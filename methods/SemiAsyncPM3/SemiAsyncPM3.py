@@ -68,6 +68,6 @@ class SemiAsyncPM3(object):
 
             current_num_picked_client = Server.get_next_round_minimum_local_model(global_loss, current_num_picked_client, minimum_num_picked_client)
         
-        Server.terminate()
+        Server.terminate(picked_client_idx)
         printLog(f"SERVER", "FL 프로세스를 종료합니다.")
         dist.barrier()

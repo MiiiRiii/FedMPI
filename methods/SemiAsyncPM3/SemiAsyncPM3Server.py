@@ -123,7 +123,12 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
 
     def terminate(self):
         self.terminate_FL.set()
-        dist.send(tensor=torch.tensor(0).type(torch.FloatTensor), dst=1)
+        flatten_model=TensorBuffer(list(self.model.state_dict().values()))
+        global_model_info = torch.zeros(len(flatten_model.buffer)+1)
+        global_model_info[-1]=-1
+        for idx in self.clients_idx:
+            dist.send(tensor=global_model_info, dst=idx)
+        dist.barrier()
 
     def average_aggregation(self, selected_client_idx, coefficient):
         for idx in selected_client_idx:
@@ -148,9 +153,10 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
             print("SERVER", f"current_global_loss_gap: {current_global_loss_gap}")
             print("SERVER", f"delta: {delta}")
         """
-        next_num_picked_client = minimum_num_picked_client 
         if current_global_loss > self.last_global_loss:
-            next_num_picked_client = int(current_num_picked_client * current_global_loss / self.last_global_loss)
+            next_num_picked_client = min(int(current_num_picked_client * current_global_loss / self.last_global_loss), self.num_clients)
+        else:
+            next_num_picked_client = max(int(current_num_picked_client * current_global_loss / self.last_global_loss), minimum_num_picked_client)
 
         self.last_global_loss = current_global_loss
         
