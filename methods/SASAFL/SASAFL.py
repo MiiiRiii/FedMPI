@@ -80,7 +80,7 @@ class SASAFL(object):
                 printLog(f"SERVER", f"목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
                 printLog(f"SERVER", "마무리 중입니다..")
                 break
-        current_num_picked_client = Server.get_next_round_minimum_local_model(global_loss, current_num_picked_client, minimum_num_picked_client)
+            current_num_picked_client = Server.get_next_round_minimum_local_model(global_loss, current_num_picked_client, minimum_num_picked_client)
         Server.terminate(clients_idx)
         printLog(f"SERVER", "FL 프로세스를 종료합니다.")
         dist.barrier()

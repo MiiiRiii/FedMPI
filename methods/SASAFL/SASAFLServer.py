@@ -193,7 +193,7 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
 
     def get_next_round_minimum_local_model(self, current_global_loss, current_num_picked_client, miminum_num_picked_client):
         if current_global_loss > self.last_global_loss:
-            next_num_picked_client = min(int(current_num_picked_client*current_global_loss/self.last_global_loss, self.num_clients))
+            next_num_picked_client = min(int(current_num_picked_client*current_global_loss/self.last_global_loss), self.num_clients)
 
         else:
             next_num_picked_client = max(int(current_num_picked_client*current_global_loss/self.last_global_loss), miminum_num_picked_client)
@@ -205,7 +205,7 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
         self.terminate_FL.set()
         self.idle_clients += clients_idx
         while self.num_cached_local_model + len(clients_idx) < self.num_clients:
-            pass
+            continue
 
         temp_global_model=TensorBuffer(list(self.model.state_dict().values()))
         global_model_info = torch.zeros(len(temp_global_model.buffer)+3)

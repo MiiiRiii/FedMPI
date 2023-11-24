@@ -52,26 +52,24 @@ class SASAFLClient(FedAvgClient.FedAvgClient):
             if global_model_version == -1: #FL 프로세스 종료
                 terminate_FL_flag.set()
                 break
-
+            
             elif is_ongoing_local_update_flag.is_set() and global_model_version>=2: # 로컬 학습 중에 글로벌 모델을 받는 경우
-
+                """
                 if global_loss < self.last_global_loss or self.local_model_version-global_model_version>average_staleness: # 새로운 글로벌 모델이 더 퀄리티가 좋은 경우
                     printLog(f"CLIENT {self.id}", f"gl: {global_loss}, gl^r-si: {self.last_global_loss} 혹은 평균 staleness 보다 높으므로 최신 글로벌 모델을 받습니다.")
 
                     self.received_global_model.load_state_dict(model_state_dict)
                     self.replace_global_model_during_local_update.set()
-
+                """
+                if self.local_model_version-global_model_version>average_staleness:
+                    printLog(f"CLIENT {self.id}", f"평균 staleness 보다 높으므로 최신 글로벌 모델을 받습니다.")
+                    self.received_global_model.load_state_dict(model_state_dict)
+                    self.replace_global_model_during_local_update.set()
 
                 else: # 현재 학습 중인 모델이 더 퀄리티가 좋은 경우
-                    """
-                    printLog(f"CLIENT {self.id}", f"gl: {self.global_model_info[-2].item()}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받지 않고 로컬 업데이트를 이어갑니다.")
-                    self.received_global_model.load_state_dict(model_state_dict)
-                    self.interpolate_global_model.set()
-
-                    continue
-                    """
                     printLog(f"CLIENT {self.id}", f"gl: {global_loss}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받지 않고 로컬 업데이트를 이어갑니다.")
                     continue
+                
 
             elif am_i_picked==1: # 처음 라운드이거나 정상적으로 로컬 모델을 업로드 한 후 글로벌 모델을 기다리고 있는 경우
                 printLog(f"CLIENT {self.id}", f"처음 라운드이거나 정상적으로 로컬 모델을 업로드 했기 때문에 글로벌 모델을 받습니다.")
