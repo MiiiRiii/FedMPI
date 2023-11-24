@@ -27,6 +27,9 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
         self.sum_global_loss_gap =0.0
         self.delta=0.0
 
+        self.terminate_background_thread = threading.Event()
+        self.terminate_background_thread.clear()
+
     def receive_local_model_from_any_clients(self):
         while not self.terminate_FL.is_set():
             temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
@@ -39,7 +42,7 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
                 self.cached_client_idx.append(req.source_rank())
                 self.num_cached_local_model += 1
-
+        self.terminate_background_thread.set()
         printLog("SERVER" ,"백그라운드 스레드를 종료합니다.")
 
     def wait_until_can_update_global_model(self, num_local_model_limit):
@@ -155,9 +158,13 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
 
     def terminate(self):
         self.terminate_FL.set()
-        #global_model_info = torch.tensor(-1).type(torch.FloatTensor)
-        #for idx in self.clients_idx:
-            #dist.send(tensor=global_model_info, dst=idx)
-        dist.barrier()
+        for idx in self.clients_idx:
+            dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
+        dist.send(tensor=torch.tensor(0).type(torch.FloatTensor), dst=1)
+        while(not self.terminate_background_thread.is_set()):
+            continue
+    
+        
+        
 
 

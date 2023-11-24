@@ -72,3 +72,10 @@ class SemiAsyncPM3Client(FedAvgClient.FedAvgClient):
         printLog(f"CLIENT {self.id}", f"local utility: {utility}")
 
         return utility
+
+    def terminate(self):
+        if self.id == 1:
+            isTerminate = torch.tensor(1).type(torch.FloatTensor)
+            dist.recv(tensor = isTerminate, src=0)
+            if isTerminate == 0:
+                self.send_local_model_to_server()
