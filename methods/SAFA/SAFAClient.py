@@ -6,18 +6,43 @@ import torch.distributed as dist
 
 import torch
 import time
-import math
+import copy
 
 from torch.utils.data import DataLoader
 from torch.optim import SGD
 from torch.nn import CrossEntropyLoss
 
-class SemiAsyncClient(FedAvgClient.FedAvgClient):
+class SAFAClient(FedAvgClient.FedAvgClient):
     def __init__(self, num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup):
         super().__init__(num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup)
         self.num_of_selected=0
         self.local_model_version=0
         self.len_local_dataset = len(dataset)
+
+    def setup(self, cluster_type):
+        super().setup(cluster_type)
+        
+        profiling_group = dist.new_group([idx for idx in range(0,self.Quota+1)])
+        flatten_model = TensorBuffer(list(self.model.state_dict().values()))
+        profiling_model_state_dict = self.model.state_dict()
+        dist.broadcast(tensor=flatten_model.buffer, group=profiling_group)
+
+        dist.broadcast(tensor=flatten_model.buffer, group=self.FLgroup)
+
+        flatten_model.unpack(profiling_model_state_dict.values())
+        self.model.load_state_dict(profiling_model_state_dict)
+
+        self.train()
+
+        T_train_k = self.total_train_time
+
+        self.total_train_time=0
+
+        dist.send(tensor=torch.tensor(T_train_k), dst=0)
+
+              
+        
+
     
     def receive_global_model_from_server(self):
         flatten_model = TensorBuffer(list(self.model.state_dict().values()))
@@ -61,4 +86,4 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
             printLog(f"CLIENT {self.id}", f"{e+1} epoch을 수행했습니다.")
 
         self.total_train_time += time.time()-start
-    
+        

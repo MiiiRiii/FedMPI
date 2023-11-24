@@ -9,6 +9,7 @@ class SAFA(object):
         None
     
     def runClient(self, Client):
+        
         while True:
             isTerminate = Client.receive_global_model_from_server()
             if isTerminate == 0 :
@@ -22,6 +23,8 @@ class SAFA(object):
             
     def runServer(self, Server):
         current_FL_start = time.time()
+        clients_idx = [idx for idx in range(1,Server.num_clients+1)]
+        coefficient = Server.calculate_coefficient(clients_idx)
 
         # FL 프로세스 시작
         while True:
@@ -35,10 +38,9 @@ class SAFA(object):
 
             P, Q = Server.CFCFM(P, Q)
 
-            cache = Server.pre_aggregation_cache_update(P)            
+            Server.pre_aggregation_cache_update(P)            
 
-            coefficient = Server.calculate_coefficient(P)
-            Server.average_aggregation(P, coefficient)
+            Server.average_aggregation(coefficient)
 
             Server.post_aggregation_cache_update()
 
@@ -57,7 +59,5 @@ class SAFA(object):
             elif Server.current_round == Server.target_rounds:
                 printLog(f"SERVER", f"목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
                 break
-        printLog(f"SERVER", "마무리 중입니다..")
-        Server.terminate(picked_client_idx)
         printLog(f"SERVER", "FL 프로세스를 종료합니다.")
         dist.barrier()

@@ -7,6 +7,8 @@ from methods.FedAsync import FedAsync, FedAsyncClient, FedAsyncServer
 from methods.LossUtilityFedAvg import LossUtilityFedAvg, LossUtilityFedAvgClient, LossUtilityFedAvgServer
 from methods.SemiAsyncPM3 import SemiAsyncPM3, SemiAsyncPM3Client, SemiAsyncPM3Server
 from methods.SASAFL import SASAFL, SASAFLClient, SASAFLServer
+from methods.SASAFLPM1Advanced import SASAFLPM1AdvancedClient
+from methods.SAFA import SAFA, SAFAClient, SAFAServer
 
 from utils.utils import printLog
 
@@ -79,7 +81,17 @@ def init_FL(FLgroup, args):
         elif args.method=="SASAFL":
             method = SASAFL.SASAFL()
             Server = SASAFLServer.SASAFLServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
-            Client = SASAFLClient.SASAFLClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)       
+            Client = SASAFLClient.SASAFLClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)  
+
+        elif args.method=="SASAFLPM1Advanced":
+            method = SASAFL.SASAFL()
+            Server = SASAFLServer.SASAFLServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            Client = SASAFLPM1AdvancedClient.SASAFLPM1AdvancedClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)   
+
+        elif args.method=="SAFA":
+            method = SAFA.SAFA()
+            Server = SAFAServer.SAFAServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            Client = SAFAClient.SAFAClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
         
         if WORLD_RANK == 0:
             if args.wandb_on == "True":
@@ -130,7 +142,7 @@ if __name__ == "__main__":
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--split", choices=['uniform', 'gaussian'], default='gaussian', type=str)
 
-    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d', 'SemiAsync', 'SemiAsyncPM1', 'FedAsync','LossUtilityFedAvg', 'SemiAsyncPM3', 'SASAFL'], default='FedAvg', type=str)
+    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d', 'SemiAsync', 'SemiAsyncPM1', 'FedAsync','LossUtilityFedAvg', 'SemiAsyncPM3', 'SASAFL', 'SAFA', 'SASAFLPM1Advanced'], default='FedAvg', type=str)
     parser.add_argument("--d", type=int)
     
     parser.add_argument("--wandb_on", choices=['True', 'False'], default='False', type=str)

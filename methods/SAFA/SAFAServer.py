@@ -13,7 +13,7 @@ from collections import OrderedDict
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 
-class SemiAsyncServer(FedAvgServer.FedAvgServer):
+class SAFAServer(FedAvgServer.FedAvgServer):
     def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup):
         super().__init__(num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup)
         self.local_model_version = [0 for idx in range(0,self.num_clients+1)]
@@ -23,8 +23,10 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
         for idx in range(1, self.num_clients+1):
             self.picked_history_per_client[idx]=-1
 
-        self.T = 1000
+        self.T_lim = 5000 #https://github.com/Jerrling02/ASFL/blob/main/FL/option.py
         self.Quota=int(self.num_clients*self.selection_ratio) # 한 라운드 동안 수신할 local model 최대 개수
+        self.flatten_client_models={}
+        self.cache={}
 
         self.num_cached_local_model_lock = threading.Lock()
         self.terminate_FL = threading.Event()
@@ -34,6 +36,29 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
         self.terminate_background_thread.clear()
 
         self.idle_clients=[]
+
+    def setup(self, dataset, iid, split, cluster_type):
+        super().setup(dataset, iid, split, cluster_type)
+
+        profiling_group = dist.new_group([idx for idx in range(0,self.Quota+1)])
+        
+        T_dist=time.time()
+        dist.broadcast(tensor=TensorBuffer(list(self.model.state_dict().values())).buffer, group=profiling_group)
+        T_dist = time.time() - T_dist
+
+        dist.broadcast(tensor=TensorBuffer(list(self.model.state_dict().values())).buffer, group=self.FLgroup)
+
+        T_train_k=torch.zeros(1)
+        T_train_k_list=[]
+        
+        for idx in range(1, self.num_clients+1):
+            dist.irecv(tensor=T_train_k)
+            T_train_k_list.append(T_train_k)
+        
+        T_max_train_k = max(T_train_k_list)
+
+        self.T = min(self.T_lim, T_dist + T_max_train_k)
+
 
     def receive_local_model_from_any_clients(self):
         start = time.time()
@@ -67,15 +92,32 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
         
         return P, Q
     
-    def pre_aggregation_cache_update(self, P):
-
-        cache=[]
-        #for k in self.Quota:
-
+    def average_aggregation(self, coefficient):
+        printLog("SERVER", "global aggregation을 진행합니다.")
+        averaged_weights = OrderedDict()
         
+        for idx in range(1, self.num_clients+1):
+            local_weights = self.cache[idx]
+            for key in local_weights.keys():
+                if idx==0:
+                    averaged_weights[key] = coefficient[idx] * local_weights[key]
+                else:
+                    averaged_weights[key] += coefficient[idx] * local_weights[key]
+
+        self.model.load_state_dict(averaged_weights)
     
-    def post_aggregation_cache_update(self):
-        pass
+    def pre_aggregation_cache_update(self, P):
+        
+        for idx in range(1,self.num_clients):
+            if idx in P:
+                self.cache[idx]=copy.deepcopy(self.flatten_client_models[idx])
+            elif self.picked_history_per_client[idx] < self.current_round-self.lag_tolerance:
+                self.cache[idx]= copy.deepcopy(self.model.state_dict())
+    
+    def post_aggregation_cache_update(self, Q):
+        for idx in range(1,self.num_clients):
+            if idx in Q:
+                self.cache[idx]=copy.deepcopy(self.flatten_client_models[idx])
 
     def send_global_model_to_clients(self):
         flatten_model = TensorBuffer(list(self.model.state_dict().values()))
@@ -92,45 +134,3 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
                 self.local_model_version[idx]=self.current_round
     
 
-
-    def evaluate_local_model(self, client_idx):
-        loss_function = CrossEntropyLoss()
-        dataloader = DataLoader(self.test_data, self.batch_size)
-
-        model = self.model_controller.Model()
-        model_state_dict = model.state_dict()
-        self.flatten_client_models[client_idx].unpack(model_state_dict.values())
-        model.load_state_dict(model_state_dict)
-
-        model.eval()
-
-        test_loss, correct = 0, 0
-
-        for data, labels in dataloader:
-            outputs = model(data)
-            test_loss = test_loss + loss_function(outputs, labels).item()
-
-            predicted = outputs.argmax(dim=1, keepdim=True)
-
-            correct = correct + predicted.eq(labels.view_as(predicted)).sum().item()
-
-        test_loss = test_loss / len(dataloader)
-        test_accuracy = correct / len(self.test_data)
-
-        printLog("Server", f"CLIENT{client_idx}의 로컬 모델 평가 결과 : acc=>{test_accuracy}, test_loss=>{test_loss}")
-
-    def average_aggregation(self, selected_client_idx, coefficient):
-        for idx in selected_client_idx:
-            printLog("SERVER", f"CLIENT {idx}의 staleness는 {self.current_round - self.local_model_version[idx]}입니다.")
-        return super().average_aggregation(selected_client_idx, coefficient)
-
-    def terminate(self, clients_idx):
-        self.idle_clients+=clients_idx
-        while self.num_cached_local_model + len(clients_idx) < self.num_clients:
-            pass
-
-        flatten_model=TensorBuffer(list(self.model.state_dict().values()))
-        global_model_info = torch.zeros(len(flatten_model.buffer)+1)
-        global_model_info[-1]=-1
-        for idx in range(1,self.num_clients+1):
-            dist.send(tensor=global_model_info, dst=idx)
