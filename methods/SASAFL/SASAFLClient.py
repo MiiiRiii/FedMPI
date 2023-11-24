@@ -171,17 +171,3 @@ class SASAFLClient(FedAvgClient.FedAvgClient):
         local_model_info.append(self.local_model_version)
         local_model_info = torch.tensor(local_model_info)
         dist.send(tensor=local_model_info, dst=0)
-
-    
-    """
-    def terminate(self):
-        # 서버에게 FL 프로세스를 종료했음을 알리는 신호 
-        flatten_model=TensorBuffer(list(self.model.state_dict().values()))
-        local_model_info = flatten_model.buffer.tolist()
-        local_model_info.append(-1)
-        local_model_info.append(self.local_model_version)
-        local_model_info = torch.tensor(local_model_info)
-        dist.send(tensor = local_model_info, dst=0)
-
-        dist.barrier()
-    """

@@ -25,15 +25,11 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
         
         self.last_global_loss = 1.0
 
-        self.terminate_background_thread = threading.Event()
-        self.terminate_background_thread.clear()
-
         self.idle_clients=[]
 
     def receive_local_model_from_any_clients(self):
         while not self.terminate_FL.is_set() or len(self.idle_clients) + self.num_cached_local_model < self.num_clients :
-            #if len(self.idle_clients) + self.num_cached_local_model == self.num_clients:
-            #    break
+
             temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
             req = dist.irecv(tensor=temp_local_model.buffer)
             req.wait()
@@ -43,7 +39,7 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
                 self.cached_client_idx.append(req.source_rank())
                 self.num_cached_local_model += 1
-        self.terminate_background_thread.set()
+
         printLog("SERVER" ,"백그라운드 스레드를 종료합니다.")
 
     def wait_until_can_update_global_model(self, num_local_model_limit):

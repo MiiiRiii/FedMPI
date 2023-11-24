@@ -19,18 +19,16 @@ class SASAFL(object):
         listen_global_model.start()
         while True:
             if terminate_FL_flag.is_set():
-                printLog(f"CLIENT {Client.id}", "FL 프로세스를 종료합니다.")
                 break
             if is_ongoing_local_update_flag.is_set():
                 utility = Client.train(terminate_FL_flag)
                 
                 if terminate_FL_flag.is_set() or utility == -1:
-                    printLog(f"CLIENT {Client.id}", "FL 프로세스를 종료합니다.")
                     break
                 Client.send_local_model_to_server(utility)
                 is_ongoing_local_update_flag.clear()
-
-        Client.terminate()
+        printLog(f"CLIENT {Client.id}", "FL 프로세스를 종료합니다.")
+        dist.barrier()
             
     def runServer(self, Server):
         
@@ -85,3 +83,4 @@ class SASAFL(object):
         current_num_picked_client = Server.get_next_round_minimum_local_model(global_loss, current_num_picked_client, minimum_num_picked_client)
         Server.terminate(clients_idx)
         printLog(f"SERVER", "FL 프로세스를 종료합니다.")
+        dist.barrier()
