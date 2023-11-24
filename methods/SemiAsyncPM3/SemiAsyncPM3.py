@@ -12,13 +12,13 @@ class SemiAsyncPM3(object):
         while True:
             isTerminate = Client.receive_global_model_from_server()
             if isTerminate == 0 :
-                printLog(f"CLIENT{Client.id}", "FL 프로세스를 종료합니다.")
 
                 break
             Client.train()
             Client.send_local_model_to_server()
 
         Client.terminate()
+        printLog(f"CLIENT{Client.id}", "FL 프로세스를 종료합니다.")
         dist.barrier()
             
     def runServer(self, Server):
@@ -64,6 +64,6 @@ class SemiAsyncPM3(object):
 
             current_num_picked_client = Server.get_next_round_minimum_local_model(global_loss, current_num_picked_client, minimum_num_picked_client)
         
-        Server.terminate()
+        Server.terminate(picked_client_idx)
         printLog(f"SERVER", "FL 프로세스를 종료합니다.")
         dist.barrier()

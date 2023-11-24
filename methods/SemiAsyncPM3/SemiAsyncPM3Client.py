@@ -20,17 +20,21 @@ class SemiAsyncPM3Client(FedAvgClient.FedAvgClient):
         self.len_local_dataset = len(dataset)
     
     def receive_global_model_from_server(self):
-        global_model_version = torch.tensor(self.local_model_version).type(torch.FloatTensor)
-        dist.recv(tensor=global_model_version, src=0)
+        flatten_model = TensorBuffer(list(self.model.state_dict().values()))
+        model_state_dict =self.model.state_dict()
+        global_model_info = torch.zeros(len(flatten_model.buffer)+1)
+        dist.recv(tensor=global_model_info, src=0)
         
-        if global_model_version.item() == -1:
+        if global_model_info[-1].item() == -1:
             return 0
         
         else :
-            self.local_model_version = global_model_version.item()
-
+            self.local_model_version = global_model_info[-1].item()
+            flatten_model.buffer = global_model_info[:-1]
+            flatten_model.unpack(model_state_dict.values())
+            self.model.load_state_dict(model_state_dict)
             printLog(f"CLIENT {self.id}", f"로컬 모델 버전 : {int(self.local_model_version)}")
-            super().receive_global_model_from_server()
+            
             return 1
 
     def train(self):
@@ -74,8 +78,5 @@ class SemiAsyncPM3Client(FedAvgClient.FedAvgClient):
         return utility
 
     def terminate(self):
-        if self.id == 1:
-            isTerminate = torch.tensor(1).type(torch.FloatTensor)
-            dist.recv(tensor = isTerminate, src=0)
-            if isTerminate == 0:
-                self.send_local_model_to_server()
+        flatten_model=TensorBuffer(list(self.model.state_dict().values()))
+        dist.send(tensor=flatten_model.buffer, dst=0) # 서버 데몬 스레드 죽이기 용
