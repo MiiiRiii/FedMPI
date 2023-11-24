@@ -76,7 +76,3 @@ class SemiAsyncPM3Client(FedAvgClient.FedAvgClient):
         printLog(f"CLIENT {self.id}", f"local utility: {utility}")
 
         return utility
-
-    def terminate(self):
-        flatten_model=TensorBuffer(list(self.model.state_dict().values()))
-        dist.send(tensor=flatten_model.buffer, dst=0) # 서버 데몬 스레드 죽이기 용

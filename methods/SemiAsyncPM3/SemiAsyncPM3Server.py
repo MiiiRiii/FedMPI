@@ -28,15 +28,17 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
         self.terminate_background_thread = threading.Event()
         self.terminate_background_thread.clear()
 
+        self.idle_clients=[]
 
     def receive_local_model_from_any_clients(self):
-        while not self.terminate_FL.is_set():
+        while not self.terminate_FL.is_set() or len(self.idle_clients) + self.num_cached_local_model < self.num_clients :
+            #if len(self.idle_clients) + self.num_cached_local_model == self.num_clients:
+            #    break
             temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
             req = dist.irecv(tensor=temp_local_model.buffer)
             req.wait()
             printLog("SERVER", f"CLIENT{req.source_rank()}에게 로컬 모델을 받음")
-            if self.terminate_FL.is_set():
-                break
+            
             self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
                 self.cached_client_idx.append(req.source_rank())
@@ -159,34 +161,14 @@ class SemiAsyncPM3Server(FedAvgServer.FedAvgServer):
 
     def terminate(self, clients_idx):
         self.terminate_FL.set()
-
-        temp_global_model=TensorBuffer(list(self.model.state_dict().values()))
-        global_model_info = torch.zeros(len(temp_global_model.buffer)+1)
-        global_model_info[-1] = -1
-
-
-        while not self.terminate_background_thread.is_set():
-            continue
-        idle_clients = [ idx for idx in set(clients_idx + self.cached_client_idx)]
-        for idx in idle_clients:
-            printLog("SERVER", f"CLIENT {idx}에게 끝났음을 알림")
-            dist.send(tensor=global_model_info, dst=idx) # 종료되었음을 알림
-
-        for idx in range(1,len(idle_clients)): # 백그라운드 스레드 정상 종료 지키기 위한 과정
-            printLog("SERVER", f"CLIENT {idx}에게 임시 모델을 받음")
-            dist.irecv(tensor=temp_global_model.buffer)
-
-
-        printLog(f"SERVER", f"로컬 업데이트가 종료된 CLIENT: {idle_clients}")
-
-        while len(idle_clients) < self.num_clients:
-            print("여기")
-            temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
-            req = dist.irecv(tensor=temp_local_model.buffer)
-            req.wait()
-            printLog(f"SERVER", f"CLIENT {req.source_rank()}가 로컬 업데이트를 종료했습니다.")
-            idle_clients.append(req.source_rank())
-
+        self.idle_clients+=clients_idx
+        while self.num_cached_local_model + len(clients_idx) < self.num_clients:
+            pass
         
+        flatten_model=TensorBuffer(list(self.model.state_dict().values()))
+        global_model_info = torch.zeros(len(flatten_model.buffer)+1)
+        global_model_info[-1]=-1
+        for idx in range(1,self.num_clients+1):
+            dist.send(tensor=global_model_info, dst=idx)
 
 

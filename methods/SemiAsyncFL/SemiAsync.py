@@ -18,7 +18,6 @@ class SemiAsync(object):
             Client.train()
             Client.send_local_model_to_server()
 
-        Client.terminate()
         dist.barrier()
             
     def runServer(self, Server):
@@ -53,19 +52,13 @@ class SemiAsync(object):
             
             if global_acc>=Server.target_accuracy:
                 printLog("SERVER", f"목표한 정확도에 도달했으며, 수행한 라운드 수는 {Server.current_round}회 입니다.")
-                printLog("SERVER", "마무리 중입니다..")
-                for idx in clients_idx:
-                    dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
                 
                 break
             
             elif Server.current_round == Server.target_rounds:
                 printLog(f"SERVER", f"목표한 라운드 수에 도달했으며, 최종 정확도는 {round(global_acc*100,4)}% 입니다.")
-                printLog(f"SERVER", "마무리 중입니다..")
-                for idx in clients_idx:
-                    dist.send(tensor=torch.tensor(-1).type(torch.FloatTensor), dst=idx) # 종료되었음을 알림
                 break
-        
-        Server.terminate()
+        printLog(f"SERVER", "마무리 중입니다..")
+        Server.terminate(picked_client_idx)
         printLog(f"SERVER", "FL 프로세스를 종료합니다.")
         dist.barrier()

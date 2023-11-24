@@ -27,9 +27,12 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
 
         self.last_global_loss = 1.0
 
+        self.idle_clients=[]
+
     def receive_local_model_from_any_clients(self):
         while not self.terminate_FL.is_set():
-            
+            if len(self.idle_clients) + self.num_cached_local_model == self.num_clients:
+                break
             temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
             local_model_info = torch.zeros(len(temp_local_model.buffer)+2)
 
@@ -205,6 +208,7 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
         return next_num_picked_client
 
     def terminate(self, clients_idx):
+        """
         self.terminate_FL.set()
 
         temp_global_model=TensorBuffer(list(self.model.state_dict().values()))
@@ -228,4 +232,15 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
                 self.terminated_clients.append(req.source_rank())
 
         dist.barrier()
+        """
+        self.idle_clients += clients_idx
+        while self.num_cached_local_model + len(clients_idx) < self.num_clients:
+            pass
+
+        temp_global_model=TensorBuffer(list(self.model.state_dict().values()))
+        global_model_info = torch.zeros(len(temp_global_model.buffer)+3)
+        global_model_info[-3] = -1
+
+        for idx in range(1,self.num_clients+1):
+            dist.send(tensor=global_model_info, dst=idx)
         

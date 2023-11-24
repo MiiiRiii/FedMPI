@@ -173,7 +173,7 @@ class SASAFLClient(FedAvgClient.FedAvgClient):
         dist.send(tensor=local_model_info, dst=0)
 
     
-    
+    """
     def terminate(self):
         # 서버에게 FL 프로세스를 종료했음을 알리는 신호 
         flatten_model=TensorBuffer(list(self.model.state_dict().values()))
@@ -184,4 +184,4 @@ class SASAFLClient(FedAvgClient.FedAvgClient):
         dist.send(tensor = local_model_info, dst=0)
 
         dist.barrier()
-
+    """

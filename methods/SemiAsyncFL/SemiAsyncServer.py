@@ -23,19 +23,26 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
         self.terminate_FL = threading.Event()
         self.terminate_FL.clear()
 
+        self.terminate_background_thread = threading.Event()
+        self.terminate_background_thread.clear()
+
+        self.idle_clients=[]
+
     def receive_local_model_from_any_clients(self):
         while not self.terminate_FL.is_set():
+            if len(self.idle_clients) + self.num_cached_local_model == self.num_clients:
+                break
             temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
             req = dist.irecv(tensor=temp_local_model.buffer)
             req.wait()
+            printLog("SERVER", f"CLIENT{req.source_rank()}에게 로컬 모델을 받음")
             if self.terminate_FL.is_set():
                 break
-            printLog("SERVER", f"CLIENT{req.source_rank()}에게 로컬 모델을 받음")
             self.flatten_client_models[req.source_rank()] = copy.deepcopy(temp_local_model)
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
                 self.cached_client_idx.append(req.source_rank())
                 self.num_cached_local_model += 1
-
+        self.terminate_background_thread.set()
         printLog("SERVER" ,"백그라운드 스레드를 종료합니다.")
 
     def wait_until_can_update_global_model(self, num_local_model_limit):
@@ -82,8 +89,10 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
 
     def send_global_model_to_clients(self, sucess_uploaded_client_idx):
         flatten_model = TensorBuffer(list(self.model.state_dict().values()))
+        global_model_info = flatten_model.buffer.tolist()
+        global_model_info.append(self.current_round)
+        global_model_info = torch.tensor(global_model_info)
         for idx in sucess_uploaded_client_idx:
-            dist.send(tensor=torch.tensor(self.current_round).type(torch.FloatTensor), dst=idx) # 모델 버전 전송
             dist.send(tensor=flatten_model.buffer, dst=idx) # 글로벌 모델 전송
             self.local_model_version[idx]=self.current_round
 
@@ -113,11 +122,18 @@ class SemiAsyncServer(FedAvgServer.FedAvgServer):
 
         printLog("Server", f"CLIENT{client_idx}의 로컬 모델 평가 결과 : acc=>{test_accuracy}, test_loss=>{test_loss}")
 
-    def terminate(self):
-        self.terminate_FL.set()
-        dist.send(tensor=torch.tensor(0).type(torch.FloatTensor), dst=1)
-
     def average_aggregation(self, selected_client_idx, coefficient):
         for idx in selected_client_idx:
             printLog("SERVER", f"CLIENT {idx}의 staleness는 {self.current_round - self.local_model_version[idx]}입니다.")
         return super().average_aggregation(selected_client_idx, coefficient)
+
+    def terminate(self, clients_idx):
+        self.idle_clients+=clients_idx
+        while self.num_cached_local_model + len(clients_idx) < self.num_clients:
+            pass
+
+        flatten_model=TensorBuffer(list(self.model.state_dict().values()))
+        global_model_info = torch.zeros(len(flatten_model.buffer)+1)
+        global_model_info[-1]=-1
+        for idx in range(1,self.num_clients+1):
+            dist.send(tensor=global_model_info, dst=idx)
