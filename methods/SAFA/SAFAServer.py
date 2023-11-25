@@ -18,12 +18,12 @@ class SAFAServer(FedAvgServer.FedAvgServer):
         super().__init__(num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup)
         self.local_model_version = [0 for idx in range(0,self.num_clients+1)]
 
-        self.lag_tolerance = 5
+        self.lag_tolerance = 3
         self.picked_history_per_client={}
         for idx in range(1, self.num_clients+1):
             self.picked_history_per_client[idx]=-1
 
-        self.T_lim = 150 # WISE
+        self.T_lim = 5000 # WISE
         # self.T_lim = 
         self.Quota=int(self.num_clients*self.selection_ratio) # 한 라운드 동안 수신할 local model 최대 개수
         self.flatten_client_models={}

@@ -61,7 +61,7 @@ class SASAFLClient(FedAvgClient.FedAvgClient):
                     self.received_global_model.load_state_dict(model_state_dict)
                     self.replace_global_model_during_local_update.set()
                 """
-                if self.local_model_version-global_model_version>average_staleness:
+                if global_model_version-self.local_model_version>average_staleness:
                     printLog(f"CLIENT {self.id}", f"평균 staleness 보다 높으므로 최신 글로벌 모델을 받습니다.")
                     self.received_global_model.load_state_dict(model_state_dict)
                     self.replace_global_model_during_local_update.set()
