@@ -15,7 +15,7 @@ class SAFA(object):
         terminate_FL_flag = threading.Event()
         terminate_FL_flag.clear()
 
-        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(is_ongoing_local_update_flag,), daemon=True)
+        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(is_ongoing_local_update_flag,terminate_FL_flag), daemon=True)
         listen_global_model.start()
         while True:
             if terminate_FL_flag.is_set():

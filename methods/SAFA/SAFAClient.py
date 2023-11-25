@@ -46,7 +46,7 @@ class SAFAClient(FedAvgClient.FedAvgClient):
         
 
     
-    def receive_global_model_from_server(self, is_ongoing_local_update_flag):
+    def receive_global_model_from_server(self, is_ongoing_local_update_flag, terminate_FL_flag):
 
         self.received_global_model = self.model_controller.Model()
 
@@ -63,6 +63,7 @@ class SAFAClient(FedAvgClient.FedAvgClient):
             global_model_version = int(self.global_model_info[-1].item())
 
             if global_model_version == -1:
+                terminate_FL_flag.set()
                 break
             
             elif is_ongoing_local_update_flag.is_set():
