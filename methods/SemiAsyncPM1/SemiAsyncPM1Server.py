@@ -100,17 +100,10 @@ class SemiAsyncPM1Server(FedAvgServer.FedAvgServer):
 
         shuffled_clients_idx = copy.deepcopy(clients_idx)
         random.shuffle(shuffled_clients_idx)
-        
-        sum_staleness=0
-        for idx in range(1,self.num_clients+1):
-            sum_staleness += (self.current_round - self.local_model_version[idx])
-        average_staleness = int(sum_staleness / self.num_clients)
-
-
+    
         global_model_info = flatten_model.buffer.tolist()
         global_model_info.append(self.current_round)
         global_model_info.append(global_loss)
-        global_model_info.append(average_staleness)
         global_model_info = torch.tensor(global_model_info)
 
         for idx in shuffled_clients_idx:
