@@ -100,8 +100,8 @@ class SASAFLPM1LTClient(FedAvgClient.FedAvgClient):
                 epoch_train_loss = 0.0
                 self.current_local_epoch -= 1
                 
-                self.local_model_version = int(self.global_model_info[-4].item())
-                self.last_global_loss = self.global_model_info[-3].item()
+                self.local_model_version = int(self.global_model_info[-3].item())
+                self.last_global_loss = self.global_model_info[-2].item()
                 self.model = copy.deepcopy(self.received_global_model)
                 
                 self.replace_global_model_during_local_update.clear()
