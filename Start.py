@@ -7,7 +7,8 @@ from methods.FedAsync import FedAsync, FedAsyncClient, FedAsyncServer
 from methods.LossUtilityFedAvg import LossUtilityFedAvg, LossUtilityFedAvgClient, LossUtilityFedAvgServer
 from methods.SemiAsyncPM3 import SemiAsyncPM3, SemiAsyncPM3Client, SemiAsyncPM3Server
 from methods.SASAFL import SASAFL, SASAFLClient, SASAFLServer
-from methods.SASAFLPM1Advanced import SASAFLPM1AdvancedClient
+from methods.SASAFLPM1Advanced import SASAFLPM1AdvancedClient, SASAFLPM1AdvancedServer
+from methods.SASAFLPM1LT import SASAFLPM1LTClient, SASAFLPM1LTServer
 from methods.SAFA import SAFA, SAFAClient, SAFAServer
 
 from utils.utils import printLog
@@ -85,9 +86,15 @@ def init_FL(FLgroup, args):
 
         elif args.method=="SASAFLPM1Advanced":
             method = SASAFL.SASAFL()
-            Server = SASAFLServer.SASAFLServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            Server = SASAFLPM1AdvancedServer.SASAFLPM1AdvancedServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
             Client = SASAFLPM1AdvancedClient.SASAFLPM1AdvancedClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)   
 
+        elif args.emthod=="SASAFLPM1LT":
+            method = SASAFL.SASAFL()
+            Server = SASAFLPM1LTServer.SASAFLPM1LTServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
+            Client = SASAFLPM1LTClient.SASAFLPM1LTClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)   
+
+        
         elif args.method=="SAFA":
             method = SAFA.SAFA()
             Server = SAFAServer.SAFAServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)

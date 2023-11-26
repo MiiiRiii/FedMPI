@@ -12,7 +12,7 @@ from collections import OrderedDict
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 
-class SASAFLServer(FedAvgServer.FedAvgServer):
+class SASAFLPM1AdvancedServer(FedAvgServer.FedAvgServer):
     def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup):
         super().__init__(num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup)
         self.local_model_version = [0 for idx in range(0,self.num_clients+1)]
@@ -99,13 +99,18 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
 
         shuffled_clients_idx = copy.deepcopy(clients_idx)
         random.shuffle(shuffled_clients_idx)
-    
+        
+        sum_staleness=0
+        for idx in range(1,self.num_clients+1):
+            sum_staleness += (self.current_round - self.local_model_version[idx])
+        average_staleness = int(sum_staleness / self.num_clients)
+
 
         global_model_info = flatten_model.buffer.tolist()
         global_model_info.append(self.current_round)
         global_model_info.append(global_loss)
+        global_model_info.append(average_staleness)
         global_model_info = torch.tensor(global_model_info)
-
 
         for idx in shuffled_clients_idx:
             if idx in picked_clients_idx:

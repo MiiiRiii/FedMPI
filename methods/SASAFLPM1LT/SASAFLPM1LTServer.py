@@ -12,7 +12,7 @@ from collections import OrderedDict
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 
-class SASAFLServer(FedAvgServer.FedAvgServer):
+class SASAFLPM1LTServer(FedAvgServer.FedAvgServer):
     def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup):
         super().__init__(num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup)
         self.local_model_version = [0 for idx in range(0,self.num_clients+1)]
@@ -23,19 +23,23 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
         self.terminate_FL = threading.Event()
         self.terminate_FL.clear()
         self.local_utility = {}
-
-        self.last_global_loss = 1.0
-
-        self.idle_clients=[]
+        self.terminated_clients = []
 
     def receive_local_model_from_any_clients(self):
-        while not self.terminate_FL.is_set() or len(self.idle_clients) + self.num_cached_local_model < self.num_clients :
+        while not self.terminate_FL.is_set():
+            
             temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
             local_model_info = torch.zeros(len(temp_local_model.buffer)+2)
 
             req = dist.irecv(tensor=local_model_info) # [local model, utility, local_model version]
             req.wait()
 
+            if local_model_info[-2].item()==-1:
+                printLog("SERVER", f"CLIENT {req.source_rank()}가 FL프로세스를 종료함")
+                self.terminated_clients.append(req.source_rank())
+
+            if self.terminate_FL.is_set():
+                break
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
                 self.cached_client_idx.append(req.source_rank())
                 self.num_cached_local_model += 1
@@ -53,19 +57,16 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
 
     def wait_until_can_update_global_model(self, num_local_model_limit):
         printLog("SERVER" , f"현재까지 받은 로컬 모델 개수: {self.num_cached_local_model}")
-        printLog("SERVER", f"이번 라운드에서 {num_local_model_limit}개의 로컬 모델을 사용합니다.")
-        
         while True:
             with self.cached_client_idx_lock and self.num_cached_local_model_lock:
                 if self.num_cached_local_model >= num_local_model_limit:
-                    
+
+                    self.num_cached_local_model -= num_local_model_limit
                     picked_client_idx = []
-                    for idx in range(self.num_cached_local_model):
+                    
+                    for idx in range(num_local_model_limit):
                         picked_client_idx.append(self.cached_client_idx.pop(0))
-                    
-                    self.num_cached_local_model = 0
-                    
-                    printLog("SERVER", f"picked client list : {picked_client_idx}")
+
                     
                     break
 
@@ -100,12 +101,10 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
         shuffled_clients_idx = copy.deepcopy(clients_idx)
         random.shuffle(shuffled_clients_idx)
     
-
         global_model_info = flatten_model.buffer.tolist()
         global_model_info.append(self.current_round)
         global_model_info.append(global_loss)
         global_model_info = torch.tensor(global_model_info)
-
 
         for idx in shuffled_clients_idx:
             if idx in picked_clients_idx:
@@ -186,26 +185,29 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
         printLog("SERVER", f"picked clients info: \n{picked_client_info}")
         super().average_aggregation(selected_client_idx, coefficient)
 
-    def get_next_round_minimum_local_model(self, current_global_loss, current_num_picked_client, miminum_num_picked_client):
-        if current_global_loss > self.last_global_loss:
-            next_num_picked_client = min(int(current_num_picked_client*current_global_loss/self.last_global_loss), self.num_clients)
-
-        else:
-            next_num_picked_client = max(int(current_num_picked_client*current_global_loss/self.last_global_loss), miminum_num_picked_client)
-
-        self.last_global_loss = current_global_loss
-        return next_num_picked_client
 
     def terminate(self, clients_idx):
         self.terminate_FL.set()
-        self.idle_clients += clients_idx
-        while self.num_cached_local_model + len(clients_idx) < self.num_clients:
-            continue
 
         temp_global_model=TensorBuffer(list(self.model.state_dict().values()))
         global_model_info = torch.zeros(len(temp_global_model.buffer)+3)
         global_model_info[-3] = -1
 
-        for idx in range(1,self.num_clients+1):
-            dist.send(tensor=global_model_info, dst=idx)
+        for idx in clients_idx:
+            printLog("SERVER", f"CLIENT {idx}에게 끝났음을 알림")
+            dist.send(tensor=global_model_info, dst=idx) # 종료되었음을 알림
+
+        temp_local_model=TensorBuffer(list(self.model.state_dict().values()))
+        local_model_info = torch.zeros(len(temp_local_model.buffer)+2)
+
+        
+        while len(self.terminated_clients) < self.num_clients:
+            req = dist.irecv(tensor=local_model_info)
+            req.wait()
+            if local_model_info[-2].item()==-1 :
+                printLog("SERVER", f"CLIENT {req.source_rank()}가 FL프로세스를 종료함")
+                
+                self.terminated_clients.append(req.source_rank())
+
+        dist.barrier()
         
