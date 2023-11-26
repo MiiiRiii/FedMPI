@@ -55,9 +55,14 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
             elif is_ongoing_local_update_flag.is_set() and global_model_version>=2: # 로컬 학습 중에 글로벌 모델을 받는 경우
 
-                if global_loss < self.last_global_loss or self.local_model_version-global_model_version>average_staleness: # 새로운 글로벌 모델이 더 퀄리티가 좋은 경우
-                    printLog(f"CLIENT {self.id}", f"gl: {global_loss}, gl^r-si: {self.last_global_loss} 혹은 평균 staleness 보다 높으므로 최신 글로벌 모델을 받습니다.")
+                if global_loss < self.last_global_loss : # 새로운 글로벌 모델이 더 퀄리티가 좋은 경우
+                    printLog(f"CLIENT {self.id}", f"gl: {global_loss}, gl^r-si: {self.last_global_loss} 이므로 최신 글로벌 모델을 받습니다.")
 
+                    self.received_global_model.load_state_dict(model_state_dict)
+                    self.replace_global_model_during_local_update.set()
+                
+                elif self.local_model_version-global_model_version>average_staleness:
+                    printLog(f"CLIENT {self.id}", f"평균 staleness 보다 높으므로 최신 글로벌 모델을 받습니다.")
                     self.received_global_model.load_state_dict(model_state_dict)
                     self.replace_global_model_during_local_update.set()
 
