@@ -15,7 +15,7 @@ from torch.optim import SGD
 from torch.nn import CrossEntropyLoss
 from collections import OrderedDict
 
-class SASAFLClient(FedAvgClient.FedAvgClient):
+class SASAFLPM1LTClient(FedAvgClient.FedAvgClient):
     def __init__(self, num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup):
         super().__init__(num_selected_clients, batch_size, local_epoch, lr, dataset, FLgroup)
         self.num_of_selected=0

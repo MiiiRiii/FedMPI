@@ -12,7 +12,7 @@ from collections import OrderedDict
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader
 
-class SASAFLServer(FedAvgServer.FedAvgServer):
+class SASAFLPM1LTServer(FedAvgServer.FedAvgServer):
     def __init__(self, num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup):
         super().__init__(num_clients, selection_ratio, batch_size, target_rounds, target_accuracy, wandb_on, FLgroup)
         self.local_model_version = [0 for idx in range(0,self.num_clients+1)]
