@@ -149,7 +149,7 @@ if __name__ == "__main__":
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--split", choices=['uniform', 'gaussian'], default='gaussian', type=str)
 
-    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d', 'SemiAsync', 'SemiAsyncPM1', 'FedAsync','LossUtilityFedAvg', 'SemiAsyncPM3', 'SASAFL', 'SAFA', 'SASAFLPM1Advanced'], default='FedAvg', type=str)
+    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d', 'SemiAsync', 'SemiAsyncPM1', 'FedAsync','LossUtilityFedAvg', 'SemiAsyncPM3', 'SASAFL', 'SAFA', 'SASAFLPM1Advanced', 'SASAFLPM1LT'], default='FedAvg', type=str)
     parser.add_argument("--d", type=int)
     
     parser.add_argument("--wandb_on", choices=['True', 'False'], default='False', type=str)
