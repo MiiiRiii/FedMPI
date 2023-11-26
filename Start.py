@@ -89,7 +89,7 @@ def init_FL(FLgroup, args):
             Server = SASAFLPM1AdvancedServer.SASAFLPM1AdvancedServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
             Client = SASAFLPM1AdvancedClient.SASAFLPM1AdvancedClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)   
 
-        elif args.emthod=="SASAFLPM1LT":
+        elif args.method=="SASAFLPM1LT":
             method = SASAFL.SASAFL()
             Server = SASAFLPM1LTServer.SASAFLPM1LTServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
             Client = SASAFLPM1LTClient.SASAFLPM1LTClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)   
