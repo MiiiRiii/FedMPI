@@ -37,7 +37,7 @@ class SASAFLPM1LTClient(FedAvgClient.FedAvgClient):
         model_state_dict = self.model.state_dict()
 
         flatten_model = TensorBuffer(list(model_state_dict.values()))
-        self.global_model_info = torch.zeros(len(flatten_model.buffer)+4)
+        self.global_model_info = torch.zeros(len(flatten_model.buffer)+3)
 
         while True:
             dist.recv(tensor=self.global_model_info, src=0) #global_model_info=[flatten_model.buffer, 글로벌 모델 버전(라운드), global loss, 평균 staleness, 선택 여부]
