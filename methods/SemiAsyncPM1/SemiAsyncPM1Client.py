@@ -22,7 +22,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         self.local_model_version=0
         self.last_global_loss=100.
         self.current_local_epoch = self.local_epoch
-        self.lag_tolerance = 5
+        self.lag_tolerance = 3
 
         self.replace_global_model_during_local_update = threading.Event() # 학습 중간에 글로벌 모델로 교체하는지 확인하는 용도
         self.replace_global_model_during_local_update.clear()
@@ -30,7 +30,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         self.interpolate_global_model = threading.Event()
         self.interpolate_global_model.clear()
 
-    def receive_global_model_from_server(self, is_ongoing_local_update_flag, terminate_FL_flag):
+    def receive_global_model_from_server(self, is_ongoing_local_update_flag, terminate_FL_flag, lag_tolerance):
         
         self.received_global_model = self.model_controller.Model() # 학습 중간에 받은 글로벌 모델을 담아두는 용도 (바로 self.model에 적용하지 않는 이유: 자원 동시에 접근될 수도 있어서)
 
@@ -60,7 +60,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                     self.received_global_model.load_state_dict(model_state_dict)
                     self.replace_global_model_during_local_update.set()
                 
-                elif global_model_version-self.local_model_version>=self.lag_tolerance:
+                elif global_model_version-self.local_model_version>=lag_tolerance:
                     printLog(f"CLIENT {self.id}", f"로컬 staleness {global_model_version-self.local_model_version} 이므로 최신 글로벌 모델을 받습니다.")
                     self.received_global_model.load_state_dict(model_state_dict)
                     self.replace_global_model_during_local_update.set()
@@ -108,29 +108,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                 
                 self.replace_global_model_during_local_update.clear()
                 continue
-            """
 
-            if self.interpolate_global_model.is_set():
-                self.current_local_epoch -= e
-                e=0
-                epoch_train_loss = 0.0
-
-                self.last_global_loss = self.global_model_info[-3].item()
-
-                global_model_state_dict = self.received_global_model.state_dict()
-                local_model_state_dict = self.model.state_dict()
-
-                interpolated_weigths = OrderedDict()
-
-                for key in global_model_state_dict.keys():
-                    interpolated_weigths[key] = (local_coefficient * local_model_state_dict[key]) + (1-local_coefficient)*global_model_state_dict[key]
-                #for key in global_model_state_dict.keys():
-                    #interpolated_weigths[key] += (1-local_coefficient) * global_model_state_dict[key]
-            
-                self.model.load_state_dict(interpolated_weigths)
-
-                continue
-            """     
             
 
             for data, labels in dataloader:

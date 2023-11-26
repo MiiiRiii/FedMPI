@@ -5,8 +5,8 @@ import time
 import threading
 
 class SemiAsyncPM1(object):
-    def __init__(self):
-        None
+    def __init__(self, lag_tolerance):
+        self.lag_tolerance = lag_tolerance
     
     def runClient(self, Client):
         is_ongoing_local_update_flag = threading.Event() # 로컬 업데이트가 현재 진행중인지
@@ -15,7 +15,7 @@ class SemiAsyncPM1(object):
         terminate_FL_flag = threading.Event()
         terminate_FL_flag.clear()
 
-        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(is_ongoing_local_update_flag, terminate_FL_flag,), daemon=True)
+        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(is_ongoing_local_update_flag, terminate_FL_flag,self.lag_tolerance), daemon=True)
         listen_global_model.start()
         while True:
             if terminate_FL_flag.is_set():

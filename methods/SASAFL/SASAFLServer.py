@@ -24,7 +24,7 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
         self.terminate_FL.clear()
         self.local_utility = {}
 
-        self.last_global_loss = 1.0
+        self.last_global_loss = None
 
         self.idle_clients=[]
 
@@ -99,17 +99,11 @@ class SASAFLServer(FedAvgServer.FedAvgServer):
 
         shuffled_clients_idx = copy.deepcopy(clients_idx)
         random.shuffle(shuffled_clients_idx)
-        
-        sum_staleness=0
-        for idx in range(1,self.num_clients+1):
-            sum_staleness += (self.current_round - self.local_model_version[idx])
-        average_staleness = int(sum_staleness / self.num_clients)
-        printLog(f"SERVER", f"평균 staleness: {average_staleness}")
+    
 
         global_model_info = flatten_model.buffer.tolist()
         global_model_info.append(self.current_round)
         global_model_info.append(global_loss)
-        global_model_info.append(average_staleness)
         global_model_info = torch.tensor(global_model_info)
 
 

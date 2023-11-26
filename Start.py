@@ -4,11 +4,8 @@ from methods.PowerOfChoice import PowerOfChoice, PowerOfChoiceClient, PowerOfCho
 from methods.SemiAsyncFL import SemiAsync, SemiAsyncClient, SemiAsyncServer
 from methods.SemiAsyncPM1 import SemiAsyncPM1, SemiAsyncPM1Client, SemiAsyncPM1Server
 from methods.FedAsync import FedAsync, FedAsyncClient, FedAsyncServer
-from methods.LossUtilityFedAvg import LossUtilityFedAvg, LossUtilityFedAvgClient, LossUtilityFedAvgServer
 from methods.SemiAsyncPM3 import SemiAsyncPM3, SemiAsyncPM3Client, SemiAsyncPM3Server
 from methods.SASAFL import SASAFL, SASAFLClient, SASAFLServer
-from methods.SASAFLPM1Advanced import SASAFLPM1AdvancedClient, SASAFLPM1AdvancedServer
-from methods.SASAFLPM1LT import SASAFLPM1LTClient, SASAFLPM1LTServer
 from methods.SAFA import SAFA, SAFAClient, SAFAServer
 
 from utils.utils import printLog
@@ -60,7 +57,7 @@ def init_FL(FLgroup, args):
             Client = SemiAsyncClient.SemiAsyncClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
 
         elif args.method=="SemiAsyncPM1":
-            method = SemiAsyncPM1.SemiAsyncPM1()
+            method = SemiAsyncPM1.SemiAsyncPM1(args.lag_tolerance)
             Server = SemiAsyncPM1Server.SemiAsyncPM1Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
             Client = SemiAsyncPM1Client.SemiAsyncPM1Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
 
@@ -68,31 +65,16 @@ def init_FL(FLgroup, args):
             method = FedAsync.FedAsync()
             Server = FedAsyncServer.FedAsyncServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
             Client = FedAsyncClient.FedAsyncClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
-
-        elif args.method=="LossUtilityFedAvg":
-            method = LossUtilityFedAvg.LossUtilityFedAvg()
-            Server = LossUtilityFedAvgServer.LossUtilityFedAvgServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
-            Client = LossUtilityFedAvgClient.LossUtilityFedAvgClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
-
+            
         elif args.method=="SemiAsyncPM3":
             method = SemiAsyncPM3.SemiAsyncPM3()
             Server = SemiAsyncPM3Server.SemiAsyncPM3Server(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
             Client = SemiAsyncPM3Client.SemiAsyncPM3Client(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup) 
 
         elif args.method=="SASAFL":
-            method = SASAFL.SASAFL()
+            method = SASAFL.SASAFL(args.lag_tolerance)
             Server = SASAFLServer.SASAFLServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
-            Client = SASAFLClient.SASAFLClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)  
-
-        elif args.method=="SASAFLPM1Advanced":
-            method = SASAFL.SASAFL()
-            Server = SASAFLPM1AdvancedServer.SASAFLPM1AdvancedServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
-            Client = SASAFLPM1AdvancedClient.SASAFLPM1AdvancedClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)   
-
-        elif args.method=="SASAFLPM1LT":
-            method = SASAFL.SASAFL()
-            Server = SASAFLPM1LTServer.SASAFLPM1LTServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
-            Client = SASAFLPM1LTClient.SASAFLPM1LTClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)   
+            Client = SASAFLClient.SASAFLClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)   
 
         
         elif args.method=="SAFA":
@@ -114,6 +96,7 @@ def init_FL(FLgroup, args):
                     "selection_ratio": args.selection_ratio,
                     "d": args.d,
                     "cluster_type":args.cluster_type,
+                    "lag_tolerance": args.lag_tolerance,
                 })
             printLog("MAIN",f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
             Server.setup(args.dataset, args.iid, args.split, args.cluster_type)
@@ -149,8 +132,9 @@ if __name__ == "__main__":
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--split", choices=['uniform', 'gaussian'], default='gaussian', type=str)
 
-    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d', 'SemiAsync', 'SemiAsyncPM1', 'FedAsync','LossUtilityFedAvg', 'SemiAsyncPM3', 'SASAFL', 'SAFA', 'SASAFLPM1Advanced', 'SASAFLPM1LT'], default='FedAvg', type=str)
+    parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d', 'SemiAsync', 'SemiAsyncPM1', 'FedAsync', 'SemiAsyncPM3', 'SASAFL', 'SAFA'], default='FedAvg', type=str)
     parser.add_argument("--d", type=int)
+    parser.add_argument("--lag_tolerance", type=int, default=2)
     
     parser.add_argument("--wandb_on", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--project",type=str)

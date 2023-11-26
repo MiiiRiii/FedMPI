@@ -5,8 +5,8 @@ import time
 import threading
 
 class SASAFL(object):
-    def __init__(self):
-        None
+    def __init__(self, lag_tolerance):
+        self.lag_tolerance = lag_tolerance
     
     def runClient(self, Client):
         is_ongoing_local_update_flag = threading.Event() # 로컬 업데이트가 현재 진행중인지
@@ -15,7 +15,7 @@ class SASAFL(object):
         terminate_FL_flag = threading.Event()
         terminate_FL_flag.clear()
 
-        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(is_ongoing_local_update_flag, terminate_FL_flag,), daemon=True)
+        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(is_ongoing_local_update_flag, terminate_FL_flag,self.lag_tolerance), daemon=True)
         listen_global_model.start()
         while True:
             if terminate_FL_flag.is_set():
@@ -39,6 +39,10 @@ class SASAFL(object):
         listen_local_update = threading.Thread(target=Server.receive_local_model_from_any_clients, args=(), daemon=True)
         
         global_acc, global_loss = Server.evaluate()
+        printLog("SERVER", f"{Server.current_round}번째 글로벌 모델 \n\
+                                => test_accuracy: {round(global_acc*100,4)}% \n\
+                                => test_loss: {round(global_loss,4)}")
+
 
         current_FL_start = time.time()
         
@@ -60,6 +64,7 @@ class SASAFL(object):
             Server.average_aggregation(picked_client_idx , coefficient)
 
             global_acc, global_loss = Server.evaluate()
+            Server.last_global_loss = global_loss
             
             picked_client_info=""
             for idx, client_idx in enumerate(picked_client_idx):
