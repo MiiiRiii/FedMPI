@@ -94,18 +94,20 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
         while e < self.current_local_epoch:
             if self.replace_global_model_during_local_update.is_set(): # 학습 중간에 글로벌 모델로 교체
+
                 e=0
                 epoch_train_loss = 0.0
                 self.current_local_epoch -= 1
+
+                if self.current_local_epoch < 2:
+                    self.current_local_epoch = 2
                 
                 self.local_model_version = int(self.global_model_info[-3].item())
                 self.last_global_loss = self.global_model_info[-2].item()
                 self.model = copy.deepcopy(self.received_global_model)
-                
+                printLog(f"CLIENT {self.id}", f"global model version {self.local_model_version}로 교체했습니다.")
                 self.replace_global_model_during_local_update.clear()
                 continue
-
-            
 
             for data, labels in dataloader:
                 optimizer.zero_grad()
