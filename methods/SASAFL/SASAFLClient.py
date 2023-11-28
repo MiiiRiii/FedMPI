@@ -51,7 +51,7 @@ class SASAFLClient(FedAvgClient.FedAvgClient):
                 terminate_FL_flag.set()
                 break
             
-            elif is_ongoing_local_update_flag.is_set() and global_model_version>=2: # active client
+            elif is_ongoing_local_update_flag.is_set() and global_model_version>=1: # active client
                 
                 if global_model_version-self.local_model_version>=lag_tolerance: #deprecated client
                     printLog(f"CLIENT {self.id}", f"로컬 staleness {global_model_version-self.local_model_version} 이므로 최신 글로벌 모델을 받습니다.") 

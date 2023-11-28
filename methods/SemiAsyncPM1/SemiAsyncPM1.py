@@ -48,8 +48,7 @@ class SemiAsyncPM1(object):
 
         # FL 프로세스 시작
         while True:
-            Server.current_round+=1
-            
+                      
             current_round_start=time.time()
 
             Server.send_global_model_to_clients(clients_idx, picked_client_idx, global_loss)
@@ -62,6 +61,8 @@ class SemiAsyncPM1(object):
             Server.average_aggregation(picked_client_idx , coefficient)
 
             global_acc, global_loss = Server.evaluate()
+
+            Server.current_round+=1
             
             picked_client_info=""
             for idx, client_idx in enumerate(picked_client_idx):

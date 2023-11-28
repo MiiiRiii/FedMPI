@@ -51,7 +51,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                 terminate_FL_flag.set()
                 break
 
-            elif is_ongoing_local_update_flag.is_set() and global_model_version>=2: # 로컬 학습 중에 글로벌 모델을 받는 경우
+            elif is_ongoing_local_update_flag.is_set() and global_model_version>=1: # 로컬 학습 중에 글로벌 모델을 받는 경우
 
                 if global_model_version-self.local_model_version>=lag_tolerance: #deprecated client
                     printLog(f"CLIENT {self.id}", f"로컬 staleness {global_model_version-self.local_model_version} 이므로 최신 글로벌 모델을 받습니다.") 
@@ -137,6 +137,8 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         return utility
     
     def send_local_model_to_server(self, utility):
+        
+
         self.current_local_epoch = self.local_epoch
 
         flatten_model=TensorBuffer(list(self.model.state_dict().values()))

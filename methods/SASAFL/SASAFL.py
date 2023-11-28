@@ -50,7 +50,7 @@ class SASAFL(object):
 
         # FL 프로세스 시작
         while True:
-            Server.current_round+=1
+
             
             current_round_start=time.time()
 
@@ -65,6 +65,8 @@ class SASAFL(object):
 
             global_acc, global_loss = Server.evaluate()
             Server.last_global_loss = global_loss
+
+            Server.current_round+=1
             
             picked_client_info=""
             for idx, client_idx in enumerate(picked_client_idx):
