@@ -63,7 +63,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                     self.replace_global_model_during_local_update.set()
 
 
-                else: # 현재 학습 중인 모델이 더 퀄리티가 좋은 경우ue
+                else: # 현재 학습 중인 모델이 더 퀄리티가 좋은 경우
 
                     printLog(f"CLIENT {self.id}", f"gl: {global_loss}, gl^r-si: {self.last_global_loss}이므로 최신 글로벌 모델을 받지 않고 로컬 업데이트를 이어갑니다.")
                     continue
@@ -91,7 +91,6 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
         epoch_train_loss = 0.0
         e=0
-        local_coefficient = 0.9
 
         while e < self.current_local_epoch:
             if self.replace_global_model_during_local_update.is_set(): # 학습 중간에 글로벌 모델로 교체
@@ -120,7 +119,7 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
                 optimizer.step()
             e+=1
 
-            printLog(f"CLIENT {self.id}", f"{e} epoch을 수행했습니다.")
+            printLog(f"CLIENT {self.id}", f"로컬 업데이트 수행 상황 : {e}/{self.current_local_epoch}.")
 
             if terminate_flag.is_set():
                 printLog(f"CLIENT {self.id}", f"학습 도중에 FL 프로세스가 종료되어 로컬 학습을 멈춥니다.")
