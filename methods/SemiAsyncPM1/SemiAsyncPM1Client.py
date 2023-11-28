@@ -22,7 +22,6 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
         self.local_model_version=0
         self.last_global_loss=100.
         self.current_local_epoch = self.local_epoch
-        self.lag_tolerance = 3
 
         self.replace_global_model_during_local_update = threading.Event() # 학습 중간에 글로벌 모델로 교체하는지 확인하는 용도
         self.replace_global_model_during_local_update.clear()
@@ -54,14 +53,12 @@ class SemiAsyncPM1Client(FedAvgClient.FedAvgClient):
 
             elif is_ongoing_local_update_flag.is_set() and global_model_version>=2: # 로컬 학습 중에 글로벌 모델을 받는 경우
 
-                if global_loss < self.last_global_loss : # 새로운 글로벌 모델이 더 퀄리티가 좋은 경우
-                    printLog(f"CLIENT {self.id}", f"gl: {global_loss}, gl^r-si: {self.last_global_loss} 이므로 최신 글로벌 모델을 받습니다.")
-
+                if global_model_version-self.local_model_version>=lag_tolerance: #deprecated client
+                    printLog(f"CLIENT {self.id}", f"로컬 staleness {global_model_version-self.local_model_version} 이므로 최신 글로벌 모델을 받습니다.") 
                     self.received_global_model.load_state_dict(model_state_dict)
                     self.replace_global_model_during_local_update.set()
-                
-                elif global_model_version-self.local_model_version>=lag_tolerance:
-                    printLog(f"CLIENT {self.id}", f"로컬 staleness {global_model_version-self.local_model_version} 이므로 최신 글로벌 모델을 받습니다.")
+                elif global_loss < self.last_global_loss : # 새로운 글로벌 모델이 더 퀄리티가 좋은 경우
+                    printLog(f"CLIENT {self.id}", f"gl: {global_loss}, gl^r-si: {self.last_global_loss} 이므로 최신 글로벌 모델을 받습니다.") #
                     self.received_global_model.load_state_dict(model_state_dict)
                     self.replace_global_model_during_local_update.set()
 
