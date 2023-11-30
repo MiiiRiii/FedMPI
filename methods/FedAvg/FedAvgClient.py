@@ -46,11 +46,19 @@ class FedAvgClient:
         # receive train dataset 
         self.receive_local_train_dataset_from_server()
 
-        dist.barrier()
+        self.receive_communication_delay()
         
         if cluster_type == "WISE":
             self.receive_omp_num_threads_from_server()
-    
+
+    def receive_communication_delay(self):
+        tensor=torch.tensor(0)
+        dist.recv(tensor=tensor, src=0)
+        self.communication_delay = int(tensor.item())
+        printLog(f"CLIENT {self.id}", f"communication delay는 {int(tensor.item())}입니다.")
+
+        dist.barrier()
+        
     def receive_omp_num_threads_from_server(self):
         tensor=torch.zeros(1)
         dist.recv(tensor=tensor, src=0)
@@ -59,7 +67,7 @@ class FedAvgClient:
         dist.barrier()
 
     def receive_local_train_dataset_from_server(self):
-
+        
         train_data_shape = torch.zeros(4)
         dist.recv(tensor=train_data_shape, src=0)
         data = torch.zeros(train_data_shape.type(torch.int32).tolist())
@@ -75,16 +83,7 @@ class FedAvgClient:
 
         printLog(f"CLIENT {self.id}", "로컬데이터셋을 받았습니다.")
 
-        """
-        ############ test_dataset ############
-        self.test_dataset = torchvision.datasets.__dict__[self.dataset_name](
-            root="./data/",
-            train=False,
-            download=False,
-            transform=torchvision.transforms.ToTensor()
-        )
-        ######################################
-        """
+        dist.barrier()
 
     def train(self):
         printLog(f"CLIENT {self.id}", "로컬 학습을 시작합니다.")
@@ -130,6 +129,11 @@ class FedAvgClient:
         return test_loss
     
     def receive_global_model_from_server(self):
+        
+        printLog(f"CLIENT {self.id}", f"글로벌 모델을 받기 전 {self.communication_delay}초를 sleep 합니다.")
+
+        time.sleep(self.communication_delay)
+
         model_state_dict = self.model.state_dict()
         model_tb = TensorBuffer(list(model_state_dict.values()))
         dist.recv(tensor=model_tb.buffer, src=0)
@@ -137,5 +141,11 @@ class FedAvgClient:
         self.model.load_state_dict(model_state_dict)
 
     def send_local_model_to_server(self):
+
+        
+        printLog(f"CLIENT {self.id}", f"로컬 모델을 보내기 전 {self.communication_delay}초를 sleep 합니다.")
+
+        time.sleep(self.communication_delay)
+
         flatten_model=TensorBuffer(list(self.model.state_dict().values()))
         dist.send(tensor=flatten_model.buffer, dst=0)

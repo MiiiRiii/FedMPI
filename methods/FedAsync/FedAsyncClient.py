@@ -35,6 +35,10 @@ class FedAsyncClient(FedAvgClient.FedAvgClient):
             return 0
         
         else :
+            
+            printLog(f"CLIENT {self.id}", f"글로벌 모델을 받기 전 {self.communication_delay}초를 sleep 합니다.")
+            time.sleep(self.communication_delay)
+
             self.local_model_version = global_model_info[-1].item()
             self.model.load_state_dict(model_state_dict)
             
@@ -67,6 +71,10 @@ class FedAsyncClient(FedAvgClient.FedAvgClient):
         self.total_train_time += time.time()-start
 
     def send_local_model_to_server(self):
+        printLog(f"CLIENT {self.id}", f"로컬 모델을 보내기 전 {self.communication_delay}초를 sleep 합니다.")
+        
+        time.sleep(self.communication_delay)
+
         flatten_model=TensorBuffer(list(self.model.state_dict().values()))
         local_model_info = flatten_model.buffer.tolist()
         local_model_info.append(self.local_model_version)

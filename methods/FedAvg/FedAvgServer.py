@@ -28,7 +28,7 @@ class FedAvgServer:
         self.len_local_dataset=[]
         self.current_round=0
         
-    def setup(self, dataset, iid, split, cluster_type):
+    def setup(self, dataset, iid, split, cluster_type, comm_hetero):
         
         # global model초기화    
         printLog("SERVER", f"global model을 초기화 합니다.")
@@ -57,9 +57,25 @@ class FedAvgServer:
 
         self.len_total_local_dataset=len(train_datasets)
         self.send_local_train_dataset_to_clients(train_datasets)
+
+        self.send_communication_delay_to_clients(comm_hetero)
         
         if cluster_type == "WISE":
             self.send_omp_num_threads_to_clients(dataset)
+
+    def send_communication_delay_to_clients(self, comm_hetero):
+
+        printLog("SERVER", f"클라이언트들에게 communication delay를 할당합니다.")
+        delay_list=[0 for idx in range(self.num_clients)]
+
+        if comm_hetero == "True":
+            delay_list = [2, 4, 6, 8, 10]*int(self.num_clients/5)
+            random.shuffle(delay_list)
+
+        for idx in range(self.num_clients):
+            dist.send(tensor=torch.tensor(delay_list[idx]), dst=idx+1)
+        
+        dist.barrier()
 
     def send_omp_num_threads_to_clients(self, dataset):
 

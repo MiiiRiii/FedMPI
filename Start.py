@@ -99,7 +99,7 @@ def init_FL(FLgroup, args):
                     "lag_tolerance": args.lag_tolerance,
                 })
             printLog("MAIN",f"I am server in {socket.gethostname()} rank {WORLD_RANK}")           
-            Server.setup(args.dataset, args.iid, args.split, args.cluster_type)
+            Server.setup(args.dataset, args.iid, args.split, args.cluster_type, args.comm_hetero)
 
             
             method.runServer(Server)
@@ -131,6 +131,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", choices=['MNIST', 'CIFAR10', 'FashionMNIST'], default='CIFAR10', type=str)
     parser.add_argument("--iid", choices=['True', 'False'], default='False', type=str)
     parser.add_argument("--split", choices=['uniform', 'gaussian'], default='gaussian', type=str)
+    parser.add_argument("--comm_hetero", choices=['True', 'False'], default='False')
 
     parser.add_argument("--method", choices=['FedAvg', 'CHAFL','pow_d','cpow_d', 'SemiAsync', 'SemiAsyncPM1', 'FedAsync', 'SemiAsyncPM3', 'SASAFL', 'SAFA'], default='FedAvg', type=str)
     parser.add_argument("--d", type=int)

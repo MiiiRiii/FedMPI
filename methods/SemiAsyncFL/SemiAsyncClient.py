@@ -31,6 +31,10 @@ class SemiAsyncClient(FedAvgClient.FedAvgClient):
             self.local_model_version = global_model_info[-1].item()
             flatten_model.buffer = global_model_info[:-1]
             flatten_model.unpack(model_state_dict.values())
+            
+            printLog(f"CLIENT {self.id}", f"글로벌 모델을 받기 전 {self.communication_delay}초를 sleep 합니다.")
+            time.sleep(self.communication_delay)
+
             self.model.load_state_dict(model_state_dict)
             printLog(f"CLIENT {self.id}", f"로컬 모델 버전 : {int(self.local_model_version)}")
             
