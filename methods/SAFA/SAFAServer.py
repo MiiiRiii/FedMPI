@@ -31,8 +31,8 @@ class SAFAServer(FedAvgServer.FedAvgServer):
 
         self.idle_clients=[]
 
-    def setup(self, dataset, iid, split, cluster_type):
-        super().setup(dataset, iid, split, cluster_type)
+    def setup(self, dataset, iid, split, cluster_type, comm_hetero):
+        super().setup(dataset, iid, split, cluster_type, comm_hetero)
 
         profiling_group = dist.new_group([idx for idx in range(0,self.Quota+1)])
         
