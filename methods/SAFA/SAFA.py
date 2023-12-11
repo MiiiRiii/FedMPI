@@ -3,32 +3,51 @@ from utils.utils import *
 import wandb
 import time
 import threading
+import random
+
+def generate_crash_trace(num_clients, num_rounds):
+    clients_crash_prob_vec = [0.3 for _ in range(0, num_clients+1)]
+    crash_trace=[]
+    progress_trace=[]
+    for r in range(num_rounds):
+        crash_ids=[]
+        progress = [1.0 for _ in range(0,num_clients+1)]
+        for c_id in range(1, num_clients+1):
+            rand=random.random()
+            if rand <= clients_crash_prob_vec[c_id]:
+                crash_ids.append(c_id)
+                progress[c_id] = rand / clients_crash_prob_vec[c_id]
+        crash_trace.append(crash_ids)
+        progress_trace.append(progress)
+    
+    return crash_trace, progress_trace
+
+
+
 
 class SAFA(object):
-    def __init__(self):
-        None
+    def __init__(self, lag_tolerance):
+        self.lag_tolerance = lag_tolerance
     
     def runClient(self, Client):
-        is_ongoing_local_update_flag = threading.Event() # 로컬 업데이트가 현재 진행중인지
-        is_ongoing_local_update_flag.clear()
-
+        
         terminate_FL_flag = threading.Event()
         terminate_FL_flag.clear()
 
-        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(is_ongoing_local_update_flag,terminate_FL_flag), daemon=True)
+        listen_global_model = threading.Thread(target=Client.receive_global_model_from_server, args=(terminate_FL_flag,), daemon=True)
         listen_global_model.start()
+
         while True:
             if terminate_FL_flag.is_set():
-                printLog(f"CLIENT {Client.id}", "FL 프로세스를 종료합니다.")
                 break
-            if is_ongoing_local_update_flag.is_set():
-                is_terminate_FL = Client.train(terminate_FL_flag)
-                
-                if terminate_FL_flag.is_set() or is_terminate_FL == 1:
-                    printLog(f"CLIENT {Client.id}", "FL 프로세스를 종료합니다.")
-                    break
+            make_ids_list=torch.tensor([0 for _ in range(0,Client.num_clients)])
+            dist.broadcast(tensor=make_ids_list, src=0, group=Client.FLgroup)
+            if terminate_FL_flag.is_set():
+                break
+            if Client.id in make_ids_list:
+                Client.train()
                 Client.send_local_model_to_server()
-                is_ongoing_local_update_flag.clear()
+
 
         dist.barrier()
             
@@ -38,31 +57,55 @@ class SAFA(object):
         coefficient = Server.calculate_coefficient(clients_idx)
 
         P = clients_idx
-        Server.send_global_model_to_clients(clients_idx)
+        Server.lag_tolerance = self.lag_tolerance
+
+        crash_trace, progress_trace = generate_crash_trace(Server.num_clients, Server.target_rounds)
+
+        picked_ids = []
         # FL 프로세스 시작
         while True:
             
             current_round_start=time.time()
 
-            Server.current_round+=1
+            crash_ids = crash_trace[Server.current_round]
+            printLog("SERVER", f"crashed clients: {crash_ids}")
+            make_ids = [c_id for c_id in range(1, Server.num_clients+1) if c_id not in crash_ids]
+            picked_ids = Server.CFCFM(make_ids, picked_ids)
+            # compensatory first-come-first-merge selection, last-round picks are considered low priority
+            undrafted_ids = [c_id for c_id in make_ids if c_id not in picked_ids]
 
-            P, Q = Server.receive_local_model_from_any_clients()
+            # distributing step
+            # distribute the global model to the edge in a discriminative manner
+            good_ids, deprecated_ids = Server.version_filter(clients_idx, Server.lag_tolerance)
+            latest_idx, straggler_ids = Server.version_filter(good_ids, 0)
+            # case 1: deprecated clients
+            Server.send_global_model_to_clients(deprecated_ids)
+            Server.update_cloud_cache_deprecated(deprecated_ids)
+            Server.update_version(deprecated_ids, Server.current_round-1)
+            # case 2: latest clients
+            Server.send_global_model_to_clients(latest_idx)
+            # case 3: non-deprecated stragglers
+            # Moderately straggling clients remain unsync.
 
-            P, Q = Server.CFCFM(P, Q)
+            # Local Update
+            make_ids_list = make_ids+[-1 for _ in range(Server.num_clients-len(make_ids))]
+            dist.broadcast(tensor=torch.tensor(make_ids_list), src=0, group=Server.FLgroup)
+            Server.receive_local_model_from_selected_clients(make_ids)
 
-            Server.pre_aggregation_cache_update(P)   
-
-            coefficient = Server.calculate_coefficient(P)         
-
-            Server.average_aggregation(P, coefficient)
-
-            Server.post_aggregation_cache_update(Q)
-
-            Server.send_global_model_to_clients(P,Q)
-
+            # Aggregation step
+            # discriminative update of cloud cache and aggregate
+            # pre-aggregation: update cache from picked clients
+            Server.update_cloud_cache(picked_ids)        
+            # SAFA aggregation
+            Server.average_aggregation(clients_idx, coefficient)
             global_acc, global_loss = Server.evaluate()
+            # post=aggregation
+            Server.update_cloud_cache(undrafted_ids)
 
+            # update_version
+            Server.update_version(picked_ids + undrafted_ids, Server.current_round)
 
+            Server.current_round+=1
 
             printLog("SERVER", f"{Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
 

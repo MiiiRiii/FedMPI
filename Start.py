@@ -78,9 +78,9 @@ def init_FL(FLgroup, args):
 
         
         elif args.method=="SAFA":
-            method = SAFA.SAFA()
+            method = SAFA.SAFA(args.lag_tolerance)
             Server = SAFAServer.SAFAServer(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.round, args.target_acc, args.wandb_on, FLgroup)
-            Client = SAFAClient.SAFAClient(int((WORLD_SIZE-1)*args.selection_ratio), args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
+            Client = SAFAClient.SAFAClient(WORLD_SIZE-1, args.selection_ratio, args.batch_size, args.local_epochs, args.lr, args.dataset, FLgroup)
         
         if WORLD_RANK == 0:
             if args.wandb_on == "True":
