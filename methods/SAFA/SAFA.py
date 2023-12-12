@@ -75,7 +75,7 @@ class SAFA(object):
 
             # compensatory first-come-first-merge selection, last-round picks are considered low priority
             picked_ids = Server.CFCFM(make_ids, picked_ids)
-            printLog("SERVER", f"make clients: {make_ids}")
+            printLog("SERVER", f"picked clients: {picked_ids}")
             
             undrafted_ids = [c_id for c_id in make_ids if c_id not in picked_ids]
             printLog("SERVER", f"undrafted clients: {undrafted_ids}")

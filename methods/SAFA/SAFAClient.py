@@ -51,13 +51,14 @@ class SAFAClient(FedAvgClient.FedAvgClient):
         while True:
     
             dist.recv(tensor=self.global_model_info, src=0)
+            global_model_version=int(self.global_model_info[-1].item())
             if global_model_version == -1:
                 terminate_FL.set()
                 break
             
             flatten_model.buffer=self.global_model_info[:-1]
             flatten_model.unpack(model_state_dict.values())
-            global_model_version=int(self.global_model_info[-1].item())
+            
 
 
 
