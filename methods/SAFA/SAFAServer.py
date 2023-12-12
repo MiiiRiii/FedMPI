@@ -73,7 +73,7 @@ class SAFAServer(FedAvgServer.FedAvgServer):
             cp_map[id] = self.clients_est_round_T_train[id]
 
         sorted_map = sorted(cp_map.items(), key=lambda x: x[1], reverse=True)
-        sorted_id_list = [sorted_map[1][0] for i in range(len(id_list))]
+        sorted_id_list = [sorted_map[i][0] for i in range(len(id_list))]
 
         return sorted_id_list
     
@@ -117,6 +117,7 @@ class SAFAServer(FedAvgServer.FedAvgServer):
     
     def average_aggregation(self, ids, coefficient):
         printLog("SERVER", "global aggregation을 진행합니다.")
+        """
         averaged_weights = OrderedDict()
         
         for idx, client_idx in enumerate(ids):
@@ -129,7 +130,16 @@ class SAFAServer(FedAvgServer.FedAvgServer):
                     averaged_weights[key] += coefficient[client_idx] * self.cache[client_idx][key]
 
         self.model.load_state_dict(averaged_weights)
+        """
+        global_model_params = self.model.state_dict()
+        for pname, param in global_model_params.items():
+            global_model_params[pname]=0.0
 
+        for id in ids:
+            for pname, param in self.cache[id].state_dict().items():
+                global_model_params[pname] += param.data * coefficient[id]
+
+        self.model.load_state_dict(global_model_params)
 
     def update_cloud_cache(self, ids):
         model = self.model_controller.Model()

@@ -57,7 +57,6 @@ class SAFA(object):
         clients_idx = [idx for idx in range(1,Server.num_clients+1)]
         coefficient = Server.calculate_coefficient(clients_idx)
 
-        P = clients_idx
         Server.lag_tolerance = self.lag_tolerance
 
         crash_trace, progress_trace = generate_crash_trace(Server.num_clients, Server.target_rounds)
@@ -98,9 +97,7 @@ class SAFA(object):
             # case 3: non-deprecated stragglers
             # Moderately straggling clients remain unsync.
 
-            # Local Update
-            
-            
+            # Local Update            
             if Server.current_round==0:
                 make_ids_list = clients_idx
             else:
@@ -123,6 +120,7 @@ class SAFA(object):
             # update_version
             Server.update_version(make_ids, Server.current_round)
 
+            printLog("SERVER", f"Version updated: {Server.local_model_version}")
             Server.current_round+=1
 
             printLog("SERVER", f"{Server.current_round}번째 글로벌 모델 test_accuracy: {round(global_acc*100,4)}%, test_loss: {round(global_loss,4)}")
