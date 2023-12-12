@@ -3,6 +3,7 @@ from utils.utils import *
 import wandb
 import time
 import threading
+import copy
 import random
 
 def generate_crash_trace(num_clients, num_rounds):
@@ -70,27 +71,44 @@ class SAFA(object):
             crash_ids = crash_trace[Server.current_round]
             printLog("SERVER", f"crashed clients: {crash_ids}")
             make_ids = [c_id for c_id in range(1, Server.num_clients+1) if c_id not in crash_ids]
-            picked_ids = Server.CFCFM(make_ids, picked_ids)
+            printLog("SERVER", f"make clients: {make_ids}")
+
             # compensatory first-come-first-merge selection, last-round picks are considered low priority
+            picked_ids = Server.CFCFM(make_ids, picked_ids)
+            printLog("SERVER", f"make clients: {make_ids}")
+            
             undrafted_ids = [c_id for c_id in make_ids if c_id not in picked_ids]
+            printLog("SERVER", f"undrafted clients: {undrafted_ids}")
 
             # distributing step
             # distribute the global model to the edge in a discriminative manner
             good_ids, deprecated_ids = Server.version_filter(clients_idx, Server.lag_tolerance)
-            latest_idx, straggler_ids = Server.version_filter(good_ids, 0)
+            printLog("SERVER", f"good clients: {good_ids}")
+            printLog("SERVER", f"deprecated clients: {deprecated_ids}")
+
+            latest_ids, straggler_ids = Server.version_filter(good_ids, 0)
+            printLog("SERVER", f"latest clients: {latest_ids}")
+
             # case 1: deprecated clients
             Server.send_global_model_to_clients(deprecated_ids)
             Server.update_cloud_cache_deprecated(deprecated_ids)
             Server.update_version(deprecated_ids, Server.current_round-1)
             # case 2: latest clients
-            Server.send_global_model_to_clients(latest_idx)
+            Server.send_global_model_to_clients(latest_ids)
             # case 3: non-deprecated stragglers
             # Moderately straggling clients remain unsync.
 
             # Local Update
-            make_ids_list = make_ids+[-1 for _ in range(Server.num_clients-len(make_ids))]
+            
+            
+            if Server.current_round==0:
+                make_ids_list = clients_idx
+            else:
+                make_ids_list = make_ids+[-1 for _ in range(Server.num_clients-len(make_ids))]
             dist.broadcast(tensor=torch.tensor(make_ids_list), src=0, group=Server.FLgroup)
-            Server.receive_local_model_from_selected_clients(make_ids)
+            Server.receive_local_model_from_selected_clients(make_ids_list)
+
+
 
             # Aggregation step
             # discriminative update of cloud cache and aggregate
@@ -103,7 +121,7 @@ class SAFA(object):
             Server.update_cloud_cache(undrafted_ids)
 
             # update_version
-            Server.update_version(picked_ids + undrafted_ids, Server.current_round)
+            Server.update_version(make_ids, Server.current_round)
 
             Server.current_round+=1
 

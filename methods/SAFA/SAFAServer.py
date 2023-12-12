@@ -78,19 +78,7 @@ class SAFAServer(FedAvgServer.FedAvgServer):
         return sorted_id_list
     
     def CFCFM(self, make_ids, last_round_pick_ids):
-        """
-        if len(P) < self.Quota:
-            for i in range(0,self.Quota - len(P)):
-                first_client_in_Q = Q.pop(0)
-                P.append(first_client_in_Q)
-        
-        for idx in P:
-            self.picked_history_per_client[idx] = self.current_round
 
-        printLog("SERVER", f"[CFCFM 단계] P {P}\n\
-                                                   Q {Q}")
-        return P, Q
-        """
         picks=[]
         in_time_make_ids = [m_id for m_id in make_ids if m_id not in self.cross_rounders]  # in-time make ids
         high_priority_ids = [h_id for h_id in in_time_make_ids if h_id not in last_round_pick_ids]  # compensatory priority
@@ -117,7 +105,7 @@ class SAFAServer(FedAvgServer.FedAvgServer):
 
 
     def version_filter(self, ids, lag_tolerance):
-        base_v = self.current_round
+        base_v = self.current_round-1
         good_ids=[]
         deprecated_ids=[]
         for id in ids:

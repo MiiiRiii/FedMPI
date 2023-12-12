@@ -109,6 +109,8 @@ class FedAvgServer:
     def receive_local_model_from_selected_clients(self, selected_client_idx):
         reqs=[]
         for idx in selected_client_idx:
+            if idx==-1:
+                continue
             req=dist.irecv(tensor=self.flatten_client_models[idx].buffer)
             reqs.append(req)
         for req in reqs:
