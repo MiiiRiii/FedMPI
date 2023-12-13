@@ -17,7 +17,6 @@ class SAFAClient(FedAvgClient.FedAvgClient):
     def __init__(self, num_clients, selection_ratio, batch_size, local_epoch, lr, dataset, FLgroup):
         super().__init__(int(num_clients * selection_ratio), 40, local_epoch, 0.001, dataset, FLgroup)
         self.num_clients = num_clients
-        self.num_of_selected=int(num_clients * selection_ratio)
         self.local_model_version=0
         self.len_local_dataset = len(dataset)
 
