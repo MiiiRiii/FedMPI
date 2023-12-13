@@ -136,7 +136,7 @@ class SAFAServer(FedAvgServer.FedAvgServer):
             global_model_params[pname]=0.0
 
         for id in ids:
-            for pname, param in self.cache[id].state_dict().items():
+            for pname, param in self.cache[id].items():
                 global_model_params[pname] += param.data * coefficient[id]
 
         self.model.load_state_dict(global_model_params)
