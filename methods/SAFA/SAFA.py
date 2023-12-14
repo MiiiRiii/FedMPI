@@ -112,7 +112,7 @@ class SAFA(object):
             # pre-aggregation: update cache from picked clients
             Server.update_cloud_cache(picked_ids)        
             # SAFA aggregation
-            Server.average_aggregation(clients_idx, coefficient)
+            Server.average_aggregation(make_ids_list, coefficient)
             global_acc, global_loss = Server.evaluate()
             # post=aggregation
             Server.update_cloud_cache(undrafted_ids)
