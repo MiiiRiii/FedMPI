@@ -135,6 +135,18 @@ class SAFAServer(FedAvgServer.FedAvgServer):
         for pname, param in global_model_params.items():
             global_model_params[pname]=0.0
 
+        agg_coefficient={}
+        agg_coefficient_sum=0
+        for id in ids:
+            if id==-1:
+                continue
+            agg_coefficient_sum+=coefficient[id]
+        
+        for id in ids:
+            if id==-1:
+                continue
+            agg_coefficient[id]=coefficient[id]/agg_coefficient_sum
+
         for id in ids:
             if id==-1:
                 continue

@@ -7,7 +7,7 @@ import copy
 import random
 
 def generate_crash_trace(num_clients, num_rounds):
-    clients_crash_prob_vec = [0.3 for _ in range(0, num_clients+1)]
+    clients_crash_prob_vec = [0.1 for _ in range(0, num_clients+1)]
     crash_trace=[]
     progress_trace=[]
     for r in range(num_rounds):
