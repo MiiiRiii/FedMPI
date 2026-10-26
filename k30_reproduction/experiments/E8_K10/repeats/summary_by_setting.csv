@@ -1,5 +1,5 @@
 setting,method,variant,dataset,K,C,tau,reps_done,reps_target,best_acc_mean,best_acc_std,best_acc_min,best_acc_max,round_to_acc_mean,time_to_acc_mean_min,reps_reached_target,wall_min_mean
-K10_MNIST_BSA_C0.1,BSA,BSA,MNIST,10,0.1,9,1,10,94.69,0.00,94.69,94.69,,,0,37.97
+K10_MNIST_BSA_C0.1,BSA,BSA,MNIST,10,0.1,9,2,10,94.64,0.05,94.60,94.69,,,0,32.52
 K10_MNIST_SASAFL_C0.1,SASAFL,SASAFL,MNIST,10,0.1,9,1,10,98.60,0.00,98.60,98.60,137.00,22.64,1,143.25
 K10_MNIST_SASAFLorig_C0.1,SASAFL,SASAFLorig,MNIST,10,0.1,9,1,10,94.40,0.00,94.40,94.40,,,0,71.84
 K10_MNIST_BSA_C0.3,BSA,BSA,MNIST,10,0.3,9,1,10,97.90,0.00,97.90,97.90,87.00,16.50,1,87.88

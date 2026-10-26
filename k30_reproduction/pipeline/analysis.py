@@ -69,6 +69,21 @@ def load_run(run_dir):
     }
 
 
+PAPER_REPS = 10   # 논문: "an average of ten repetitions per setting"
+
+
+def n_reps(run):
+    """반복 평균 실행에 들어간 완료 반복 수 (단일 실행이면 1, 없으면 0)."""
+    if run is None or not run.get("complete"):
+        return 0
+    return len(run.get("reps", [run]))
+
+
+def rep_tag(run):
+    """그림·표에 넣는 반복 횟수 표기: 재현 반복 수/논문 반복 수"""
+    return f"{n_reps(run)}/{PAPER_REPS}"
+
+
 def combine_runs(runs):
     """같은 설정의 반복 실행들(완료된 것만) → 반복 평균 '가상 실행'.
     그림용 곡선은 라운드별 평균, 표용 지표는 반복마다 구한 뒤 평균한다(metrics/wall_at_round가 reps를 본다).
@@ -161,14 +176,14 @@ def compare_with_paper(paper_img, our_img, out_path, title):
     canvas.save(out_path)
 
 
-def _legend_top(ax, ncol=3):
+def _legend_top(ax, ncol=3, handlelength=3):
     # 논문처럼 가로 방향(행 우선)으로 읽히게: matplotlib은 열 우선으로 채우므로 순서를 바꾼다
     handles, labels = ax.get_legend_handles_labels()
     rows = -(-len(handles) // ncol)
     order = [r * ncol + c for c in range(ncol) for r in range(rows) if r * ncol + c < len(handles)]
     ax.legend([handles[i] for i in order], [labels[i] for i in order],
               loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=ncol, frameon=False,
-              handlelength=3)
+              handlelength=handlelength, columnspacing=1.0, handletextpad=0.5)
 
 
 # ------------------------------------------------------------------ Fig. 7 / Fig. 8 형식
@@ -177,17 +192,18 @@ def draw_bsa_vs_sasafl(ax, runs, every, ylim, xmax, inset=None):
     for method, color in (("BSA", GREEN), ("SASAFL", RED)):
         for c in (0.1, 0.3, 0.5):
             run = runs.get((method, c))
+            label = f"{method}, C={c} ({rep_tag(run)})"
             if run is None or len(run["acc"]) == 0:
-                ax.plot([], [], color=color, ls=C_STYLE[c], label=f"{method}, C={c}")
+                ax.plot([], [], color=color, ls=C_STYLE[c], label=label)
                 continue
             x, y = _subsample(run, every)
-            ax.plot(x, y, color=color, ls=C_STYLE[c], lw=1.4, label=f"{method}, C={c}")
+            ax.plot(x, y, color=color, ls=C_STYLE[c], lw=1.4, label=label)
     ax.set_xlim(0, xmax)
     ax.set_ylim(*ylim)
     ax.set_xlabel("Rounds (#)")
     ax.set_ylabel("Global model accuracy (%)")
     ax.grid(axis="y", color="#dddddd")
-    _legend_top(ax)
+    _legend_top(ax, handlelength=2)
     if inset:
         (x0, x1), (y0, y1) = inset
         ins = ax.inset_axes([0.55, 0.12, 0.4, 0.38])
@@ -223,12 +239,12 @@ def fig_bsa_vs_sasafl(runs, out_path, every, ylim, xmax, inset=None, title=None)
 
 def fig7_grid(mnist_runs, fmnist_runs, out_path, mnist_k10=None, fmnist_k10=None):
     """논문 Fig.7과 같은 2×2 배치. 논문의 (K=30, K=100) 두 열에 재현의 (K=10, K=30)을 대응시킨다 (작은 K가 왼쪽)."""
-    with plt.rc_context({"font.size": 15, "legend.fontsize": 12}):
+    with plt.rc_context({"font.size": 15, "legend.fontsize": 10.5}):
         _fig7_grid(mnist_runs, fmnist_runs, out_path, mnist_k10 or {}, fmnist_k10 or {})
 
 
 def _fig7_grid(mnist_runs, fmnist_runs, out_path, mnist_k10, fmnist_k10):
-    fig, axes = plt.subplots(2, 2, figsize=(13, 9.6))
+    fig, axes = plt.subplots(2, 2, figsize=(15, 9.6))
     draw_bsa_vs_sasafl(axes[0][0], mnist_k10, 5, (0, 100), 500, inset=((450, 500), (80, 100)))
     draw_bsa_vs_sasafl(axes[0][1], mnist_runs, 5, (0, 100), 500, inset=((450, 500), (80, 100)))
     draw_bsa_vs_sasafl(axes[1][0], fmnist_k10, 5, (0, 100), 500)
@@ -242,13 +258,13 @@ def _fig7_grid(mnist_runs, fmnist_runs, out_path, mnist_k10, fmnist_k10):
 
 
 def fig8_grid(cifar_runs, out_path, xmax, cifar_k10=None):
-    with plt.rc_context({"font.size": 15, "legend.fontsize": 12}):
+    with plt.rc_context({"font.size": 15, "legend.fontsize": 10.5}):
         _fig8_grid(cifar_runs, out_path, xmax, cifar_k10 or {})
 
 
 def _fig8_grid(cifar_runs, out_path, xmax, cifar_k10):
     """논문 Fig.8 배치. 논문의 (a) K=30, (b) K=100 자리에 재현의 (a) K=10, (b) K=30을 대응시킨다."""
-    fig, axes = plt.subplots(1, 2, figsize=(13, 4.8))
+    fig, axes = plt.subplots(1, 2, figsize=(15, 4.8))
     draw_bsa_vs_sasafl(axes[0], cifar_k10, 10, (0, 60), xmax)
     draw_bsa_vs_sasafl(axes[1], cifar_runs, 10, (0, 60), xmax)
     for ax, cap in zip(axes, ["(a) K=10", "(b) K=30"]):
@@ -261,13 +277,14 @@ def _fig8_grid(cifar_runs, out_path, xmax, cifar_k10):
 # ------------------------------------------------------------------ Fig. 9 형식
 def fig_sasafl_c(runs, out_path, ylim=(30, 60), xmax=3000):
     colors = {0.1: "#ffc000", 0.3: "#00b0f0", 0.5: "#b07fd6"}
-    fig, ax = plt.subplots(figsize=(7.2, 4.6))
+    fig, ax = plt.subplots(figsize=(8.2, 4.6))
     for c in (0.1, 0.3, 0.5):
         run = runs.get(("SASAFL", c))
+        label = f"SASAFL, C={c} ({rep_tag(run)})"
         if run is None or len(run["acc"]) == 0:
-            ax.plot([], [], color=colors[c], label=f"SASAFL, C={c}")
+            ax.plot([], [], color=colors[c], label=label)
             continue
-        ax.plot(run["rounds"], run["acc"], color=colors[c], lw=0.8, label=f"SASAFL, C={c}")
+        ax.plot(run["rounds"], run["acc"], color=colors[c], lw=0.8, label=label)
     ax.set_xlim(0, xmax)
     vals = [v for c in (0.1, 0.3, 0.5) for v in (runs.get(("SASAFL", c)) or {"acc": []})["acc"]]
     lo = min(ylim[0], 10 * np.floor(min(vals) / 10)) if len(vals) else ylim[0]
@@ -275,7 +292,7 @@ def fig_sasafl_c(runs, out_path, ylim=(30, 60), xmax=3000):
     ax.set_xlabel("Rounds (#)")
     ax.set_ylabel("Global model accuracy (%)")
     ax.grid(axis="y", color="#dddddd")
-    _legend_top(ax)
+    _legend_top(ax, handlelength=1.8)
     fig.tight_layout()
     fig.savefig(out_path, dpi=200)
     plt.close(fig)
@@ -348,7 +365,10 @@ def fig5(acc_by_tau, out_path):
               loc="upper center", bbox_to_anchor=(0.5, -0.12), ncol=10, frameon=False,
               handlelength=1.0, handletextpad=0.3, columnspacing=0.8)
     lo = min([min(d) for d in data if d], default=95)
-    ax.set_ylim(min(95, np.floor(lo)), 99)
+    y0 = min(95, np.floor(lo))
+    ax.set_ylim(y0, 99 + 0.06 * (99 - y0))
+    for t, d in zip(taus, data):   # 박스 위: 재현 반복 수/논문 반복 수
+        ax.text(t, 99 + 0.02 * (99 - y0), f"{len(d)}/{PAPER_REPS}", ha="center", va="bottom", fontsize=8)
     ax.set_xlabel("Lag tolerance")
     ax.set_ylabel("Global model accuracy (%)")
     ax.grid(axis="y", color="#dddddd")
@@ -516,8 +536,9 @@ def simple_table_png(title, header, rows, out_path, subtitle=None):
     plt.close(fig)
 
 
-def table2_full_png(values, title, out_path, note=None):
-    """논문 Table 2와 같은 배치. values[dataset][C][method] = (acc, rta, tta)."""
+def table2_full_png(values, title, out_path, note=None, reps=None):
+    """논문 Table 2와 같은 배치. values[dataset][C][method] = (acc, rta, tta).
+    reps[dataset][C][method] = 완료 반복 수 → C마다 'Repetitions' 행(재현/논문)을 덧붙인다."""
     datasets = [("MNIST", "MNIST"), ("FashionMNIST", "FashionMNIST"), ("CIFAR10", "CIFAR-10")]
     fig, ax = plt.subplots(figsize=(12, 9.2))
     ax.axis("off")
@@ -560,6 +581,13 @@ def table2_full_png(values, title, out_path, note=None):
                 for j, v in enumerate(pair):
                     ax.text(xs[1 + 2 * k + j] + 0.45, y, _fmt(v, kind), ha="right", fontsize=13,
                             fontweight="bold" if w == j else "normal")
+        if reps is not None:
+            y -= 0.6
+            ax.text(xs[0], y, "Repetitions", fontsize=12, color="#444444")
+            for k, (key, _) in enumerate(datasets):
+                for j, m in enumerate(("BSA", "SASAFL")):
+                    n = reps.get(key, {}).get(c, {}).get(m, 0)
+                    ax.text(xs[1 + 2 * k + j] + 0.45, y, f"{n}/{PAPER_REPS}", ha="right", fontsize=12, color="#444444")
         y -= 0.35
         ax.hlines(y, 0.2, 11.9, color="black", lw=1.4 if ci == 2 else 0.8)
     ax.set_ylim(y - 0.4, top)
