@@ -1,0 +1,11 @@
+setting,method,variant,dataset,K,C,tau,reps_done,reps_target,best_acc_mean,best_acc_std,best_acc_min,best_acc_max,round_to_acc_mean,time_to_acc_mean_min,reps_reached_target,wall_min_mean
+LT_tau1_rep1,SASAFL,,MNIST,30,0.3,1,1,10,81.64,0.00,81.64,81.64,,,0,309.53
+LT_tau2_rep1,SASAFL,,MNIST,30,0.3,2,1,10,98.30,0.00,98.30,98.30,117.00,82.40,1,381.20
+LT_tau3_rep1,SASAFL,,MNIST,30,0.3,3,1,10,98.34,0.00,98.34,98.34,128.00,118.14,1,434.25
+LT_tau4_rep1,SASAFL,,MNIST,30,0.3,4,1,10,97.94,0.00,97.94,97.94,116.00,85.64,1,375.00
+LT_tau5_rep1,SASAFL,,MNIST,30,0.3,5,1,10,98.55,0.00,98.55,98.55,79.00,68.26,1,538.36
+LT_tau6_rep1,SASAFL,,MNIST,30,0.3,6,1,10,98.30,0.00,98.30,98.30,138.00,104.28,1,363.42
+LT_tau7_rep1,SASAFL,,MNIST,30,0.3,7,1,10,98.31,0.00,98.31,98.31,96.00,84.37,1,436.85
+LT_tau8_rep1,SASAFL,,MNIST,30,0.3,8,1,10,88.11,0.00,88.11,88.11,,,0,264.05
+LT_tau9_rep1,SASAFL,,MNIST,30,0.3,9,1,1,98.53,0.00,98.53,98.53,81.00,73.48,1,413.20
+LT_tau10_rep1,SASAFL,,MNIST,30,0.3,10,1,10,96.76,0.00,96.76,96.76,337.00,213.18,1,325.05

@@ -1,0 +1,23 @@
+{
+  "mode": "single",
+  "cats": "1,2,3,4,8",
+  "K": 30,
+  "batch": 32,
+  "epochs": 5,
+  "target": 1.0,
+  "tau": 6,
+  "name": "LT_tau6_rep1",
+  "method": "SASAFL",
+  "C": 0.3,
+  "dataset": "MNIST",
+  "lr": 0.01,
+  "rounds": 500,
+  "max_wall_min": 1500,
+  "rep": 1,
+  "setting": "LT_tau6_rep1",
+  "cmd": "bash /home/wise-175/Mando/FedMPI/k30_reproduction/launch.sh SASAFL 0.3 30 single 1,2,3,4,8",
+  "run_id": "LT_tau6_rep1_1792680738",
+  "start": "2026-10-22T23:52:18",
+  "host": "wise-175",
+  "cpu_list": ""
+}

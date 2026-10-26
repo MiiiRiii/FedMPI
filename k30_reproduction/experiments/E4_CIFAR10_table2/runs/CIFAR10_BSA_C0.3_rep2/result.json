@@ -1,0 +1,19 @@
+{
+  "name": "CIFAR10_BSA_C0.3_rep2",
+  "outcome": "completed",
+  "returncode": 0,
+  "wall_min": 185.8,
+  "rounds_done": 500,
+  "rounds_requested": 500,
+  "best_acc": 46.81,
+  "last_acc": 44.32,
+  "errors": {
+    "is_set_corruption": 0,
+    "segfault": 0,
+    "abort": 0,
+    "connection_closed": 0,
+    "gloo_timeout": 0,
+    "traceback": 0,
+    "child_failed": 0
+  }
+}

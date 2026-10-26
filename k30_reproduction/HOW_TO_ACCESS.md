@@ -74,3 +74,12 @@ tmux attach -t k30
 - E8 = K=10에서 BSA · SASAFL(현재 코드) · SASAFL(원저자 코드) × MNIST/FashionMNIST/CIFAR-10 × C 0.1/0.3/0.5 = 27개, 각 500라운드.
 - 논문의 K=100 칸 자리에 K=10이 들어간다: compare_fig7 (b)(d), compare_fig8 (b), compare_fig11, compare_table4, compare_fig7_err (b)(d).
 - tmux k30 창 6 `e8`(175), 176은 `e8_console.log`. 동기화 창 4는 `sync_from_176.sh` (E7·E8 모두).
+
+## 반복 실험 (논문: 설정당 10회 평균) — 2026-10-22 시작
+- 시작/재개: `bash k30_reproduction/start_repeats.sh` (wise-175에서). 재부팅 시 두 노드 crontab `@reboot`이 자동 재개.
+- 대상: 남은 E5 1회차(τ=2–8,10) + E1·E2·E4·E5·E7·E8 2~10회차 (총 575개 실행). 순서는 `queue_order.txt` — 회차 단위(2회차 전체 → 3회차 전체 …)라 중간에 멈춰도 완성된 회차까지는 한 벌씩 갖춰진다.
+- 두 노드 분배: `k30_reproduction/claims/<실행이름>/host` (먼저 차지한 노드가 실행, 끝난 실행은 미리 차지돼 있음).
+- 실행 폴더 이름: 1회차는 기존 이름, 2회차부터 `<이름>_rep2` … `_rep10` (E5는 `LT_tau<τ>_rep<회차>`). τ=9는 E1 SASAFL C=0.3 반복을 재사용.
+- 반복 값 파일: 각 실험 폴더의 `repeats/runs_index.csv`(실행별) · `repeats/summary_by_setting.csv`(설정별 평균·표준편차) · `repeats/curves/<설정>.csv`(라운드별 회차 값·평균).
+- 그림: 곡선은 완료된 반복의 라운드별 평균, Fig.5는 τ별 반복 값 전체로 박스플롯, 표(Table 2·4, Fig.11)는 반복별 값의 평균.
+- tmux k30: 3 reps(175) · 4 sync(10분마다 176 결과 가져와 그림 재생성). 176: `reps_console.log`.

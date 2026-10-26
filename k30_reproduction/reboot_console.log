@@ -1,0 +1,5 @@
+175: tmux k30:3 에서 시작
+176: 시작 요청 (터보가 켜져 있으면 스스로 종료 — 176의 reps_console.log 확인)
+동기화: tmux k30:4 에서 시작
+접속: tmux attach -t k30   (빠져나오기: Ctrl+b 누른 뒤 d)
+Terminated

@@ -1,0 +1,7 @@
+setting,method,variant,dataset,K,C,tau,reps_done,reps_target,best_acc_mean,best_acc_std,best_acc_min,best_acc_max,round_to_acc_mean,time_to_acc_mean_min,reps_reached_target,wall_min_mean
+FMNIST_BSA_C0.1,BSA,,FashionMNIST,30,0.1,9,2,10,62.26,1.38,60.88,63.64,,,0,31.93
+FMNIST_BSA_C0.3,BSA,,FashionMNIST,30,0.3,9,2,10,74.47,0.02,74.45,74.50,363.50,144.54,2,198.48
+FMNIST_BSA_C0.5,BSA,,FashionMNIST,30,0.5,9,2,10,78.43,1.14,77.29,79.57,157.50,99.52,2,310.81
+FMNIST_SASAFL_C0.1,SASAFL,,FashionMNIST,30,0.1,9,2,10,60.61,0.89,59.72,61.49,,,0,161.28
+FMNIST_SASAFL_C0.3,SASAFL,,FashionMNIST,30,0.3,9,2,10,71.14,1.21,69.93,72.35,313.00,222.60,1,350.38
+FMNIST_SASAFL_C0.5,SASAFL,,FashionMNIST,30,0.5,9,2,10,81.60,0.24,81.36,81.84,91.50,123.49,2,688.82

@@ -1,0 +1,19 @@
+{
+  "name": "FMNIST_SASAFL_C0.1_rep2",
+  "outcome": "completed",
+  "returncode": 0,
+  "wall_min": 173.87,
+  "rounds_done": 500,
+  "rounds_requested": 500,
+  "best_acc": 61.49,
+  "last_acc": 59.7,
+  "errors": {
+    "is_set_corruption": 0,
+    "segfault": 0,
+    "abort": 0,
+    "connection_closed": 0,
+    "gloo_timeout": 0,
+    "traceback": 0,
+    "child_failed": 0
+  }
+}

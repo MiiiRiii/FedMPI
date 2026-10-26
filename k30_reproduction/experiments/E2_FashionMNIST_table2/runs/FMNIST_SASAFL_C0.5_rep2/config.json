@@ -1,0 +1,23 @@
+{
+  "mode": "single",
+  "cats": "1,2,3,4,8",
+  "K": 30,
+  "batch": 32,
+  "epochs": 5,
+  "target": 1.0,
+  "tau": 9,
+  "name": "FMNIST_SASAFL_C0.5_rep2",
+  "method": "SASAFL",
+  "C": 0.5,
+  "dataset": "FashionMNIST",
+  "lr": 0.001,
+  "rounds": 500,
+  "max_wall_min": 1500,
+  "rep": 2,
+  "setting": "FMNIST_SASAFL_C0.5",
+  "cmd": "bash /home/wise-176/Mando/FedMPI/k30_reproduction/launch.sh SASAFL 0.5 30 single 1,2,3,4,8",
+  "run_id": "FMNIST_SASAFL_C0.5_rep2_1792829647",
+  "start": "2026-10-24T17:14:07",
+  "host": "wise-176",
+  "cpu_list": ""
+}

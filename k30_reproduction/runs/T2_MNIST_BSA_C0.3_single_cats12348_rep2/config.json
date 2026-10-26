@@ -1,0 +1,23 @@
+{
+  "mode": "single",
+  "cats": "1,2,3,4,8",
+  "K": 30,
+  "batch": 32,
+  "epochs": 5,
+  "target": 1.0,
+  "tau": 9,
+  "name": "T2_MNIST_BSA_C0.3_single_cats12348_rep2",
+  "method": "SemiAsync",
+  "C": 0.3,
+  "dataset": "MNIST",
+  "lr": 0.01,
+  "rounds": 500,
+  "max_wall_min": 1500,
+  "rep": 2,
+  "setting": "T2_MNIST_BSA_C0.3_single_cats12348",
+  "cmd": "bash /home/wise-176/Mando/FedMPI/k30_reproduction/launch.sh SemiAsync 0.3 30 single 1,2,3,4,8",
+  "run_id": "T2_MNIST_BSA_C0.3_single_cats12348_rep2_1792745704",
+  "start": "2026-10-23T17:55:04",
+  "host": "wise-176",
+  "cpu_list": ""
+}

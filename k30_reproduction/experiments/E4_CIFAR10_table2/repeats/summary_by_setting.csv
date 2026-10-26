@@ -1,0 +1,7 @@
+setting,method,variant,dataset,K,C,tau,reps_done,reps_target,best_acc_mean,best_acc_std,best_acc_min,best_acc_max,round_to_acc_mean,time_to_acc_mean_min,reps_reached_target,wall_min_mean
+CIFAR10_BSA_C0.1,BSA,,CIFAR10,30,0.1,9,2,10,38.95,2.45,36.50,41.40,,,0,37.05
+CIFAR10_BSA_C0.3,BSA,,CIFAR10,30,0.3,9,2,10,47.37,0.55,46.81,47.92,,,0,186.01
+CIFAR10_BSA_C0.5,BSA,,CIFAR10,30,0.5,9,2,10,51.59,1.20,50.39,52.80,,,0,318.21
+CIFAR10_SASAFL_C0.1,SASAFL,,CIFAR10,30,0.1,9,2,10,41.30,3.02,38.28,44.32,,,0,192.74
+CIFAR10_SASAFL_C0.3,SASAFL,,CIFAR10,30,0.3,9,2,10,45.82,1.47,44.35,47.29,,,0,321.35
+CIFAR10_SASAFL_C0.5,SASAFL,,CIFAR10,30,0.5,9,2,10,52.55,1.41,51.14,53.97,,,0,498.19

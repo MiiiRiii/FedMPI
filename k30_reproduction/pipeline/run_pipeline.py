@@ -43,11 +43,31 @@ PROGRESS = K30 / "PROGRESS.md"
 
 BASE = {"mode": "single", "cats": "1,2,3,4,8", "K": 30, "batch": 32, "epochs": 5, "target": 1.0, "tau": 9}
 SETUP_TEXT = ("K=30, wise-175 단일 노드, CPU 카테고리 1·2·3·4·8코어 × 6명(논문 K=30 구성), "
-              "batch 32, local epoch 5, τ=9, ζ=0.9, non-IID(gaussian), 1회 실행")
+              "batch 32, local epoch 5, τ=9, ζ=0.9, non-IID(gaussian), 설정당 반복 10회 목표(논문: average of ten repetitions)")
 RUN_MAX_WALL_MIN = 1500   # 실행 하나의 시간 상한 (MNIST SASAFL C=0.5가 561분 걸려 600분 상한에 걸린 적 있음)
 MAX_ROUNDS = 500   # 500라운드를 넘는 실험(CIFAR-10, 논문 3000)은 500으로 고정 (2026-10-10 결정)
 # 원저자 마지막 커밋(2023-12-14)의 SASAFL.py: last_global_loss를 quota 계산 직전에 덮어써서 quota가 C·K로 고정된다
 ERR_SASAFL_SRC = K30 / "original_code" / "SASAFL_c0b819b.py"
+REPS = 10   # 논문: "All the experiments were performed with an average of ten repetitions per setting."
+
+
+def rep_name(name, r):
+    """반복 r회차 실행 이름. 1회차는 기존 이름 그대로 (LT_tau*_rep1은 _repN으로 바꾼다)."""
+    if r == 1:
+        return name
+    if name.endswith("_rep1"):
+        return f"{name[:-5]}_rep{r}"
+    return f"{name}_rep{r}"
+
+
+def add_reps(specs, skip=lambda spec: False):
+    """1회차 실행 정의 → 1~REPS회차 정의 (회차 순서). spec['setting'] = 1회차 이름 (같은 설정끼리 묶는 키)."""
+    out = [{**sp, "rep": 1, "setting": sp["name"]} for sp in specs]
+    for r in range(2, REPS + 1):
+        out += [{**sp, "name": rep_name(sp["name"], r), "rep": r, "setting": sp["name"]} for sp in specs if not skip(sp)]
+    return out
+
+
 METHOD_TAG = {"SemiAsync": "BSA", "SASAFL": "SASAFL", "FedAvg": "FedAvg", "FedAsync": "FedAsync"}
 
 
@@ -64,32 +84,33 @@ def table2_runs(prefix, dataset, lr, rounds, max_wall_min):
 EXPERIMENTS = [
     {"id": "E1", "dir": "E1_MNIST_table2", "title": "MNIST — Table 2(MNIST 열), Fig. 7(a), Table 4(MNIST)",
      "runs_root": K30 / "runs",   # 2026-10-10 시작한 Table 2 실행을 그대로 사용
-     "runs": table2_runs("T2_MNIST", "MNIST", 0.01, 500, RUN_MAX_WALL_MIN)},
+     "runs": add_reps(table2_runs("T2_MNIST", "MNIST", 0.01, 500, RUN_MAX_WALL_MIN))},
     {"id": "E2", "dir": "E2_FashionMNIST_table2",
      "title": "FashionMNIST — Table 2(FashionMNIST 열), Fig. 7(c), Fig. 11(K=30), Table 4(FashionMNIST)",
-     "runs": table2_runs("FMNIST", "FashionMNIST", 0.001, 500, RUN_MAX_WALL_MIN)},
+     "runs": add_reps(table2_runs("FMNIST", "FashionMNIST", 0.001, 500, RUN_MAX_WALL_MIN))},
     {"id": "E4", "dir": "E4_CIFAR10_table2",
      "title": "CIFAR-10 — Table 2(CIFAR-10 열), Fig. 8(a), Fig. 9, Table 4(CIFAR-10)",
-     "runs": table2_runs("CIFAR10", "CIFAR10", 0.001, MAX_ROUNDS, RUN_MAX_WALL_MIN)},
-    {"id": "E5", "dir": "E5_Fig5_lag_tolerance", "title": "Lag tolerance τ=1–10 — Fig. 5 (MNIST, SASAFL, C=0.3, 1회)",
-     "runs": [{**BASE, "name": f"LT_tau{t}_rep{r}", "method": "SASAFL", "C": 0.3, "dataset": "MNIST", "lr": 0.01,
-               "rounds": 500, "tau": t, "max_wall_min": RUN_MAX_WALL_MIN}
-              for r in (1,) for t in range(1, 11)]},
+     "runs": add_reps(table2_runs("CIFAR10", "CIFAR10", 0.001, MAX_ROUNDS, RUN_MAX_WALL_MIN))},
+    {"id": "E5", "dir": "E5_Fig5_lag_tolerance", "title": "Lag tolerance τ=1–10 — Fig. 5 (MNIST, SASAFL, C=0.3, 설정당 10회)",
+     # τ=9는 E1의 SASAFL C=0.3과 설정이 같아 그 반복을 재사용한다 (1회차는 심볼릭 링크, 2회차부터는 E1 실행을 직접 읽음)
+     "runs": add_reps([{**BASE, "name": f"LT_tau{t}_rep1", "method": "SASAFL", "C": 0.3, "dataset": "MNIST", "lr": 0.01,
+                        "rounds": 500, "tau": t, "max_wall_min": RUN_MAX_WALL_MIN} for t in range(1, 11)],
+                      skip=lambda sp: sp["tau"] == 9)},
     {"id": "E7", "dir": "E7_adaptive_off_2023code",
      "title": "적응형 quota가 꺼진 원저자 코드(c0b819b) — Fig. 7(a)(c), Fig. 9 재실행 (SASAFL만, BSA는 E1·E2·E4 재사용)",
-     "runs": [{**BASE, "name": f"ERR_{tag}_SASAFL_C{c}", "method": "SASAFL", "C": c, "dataset": ds, "lr": lr,
-               "rounds": MAX_ROUNDS, "max_wall_min": RUN_MAX_WALL_MIN, "sasafl_src": str(ERR_SASAFL_SRC)}
-              for tag, ds, lr in (("MNIST", "MNIST", 0.01), ("FMNIST", "FashionMNIST", 0.001), ("CIFAR10", "CIFAR10", 0.001))
-              for c in (0.1, 0.3, 0.5)]},
+     "runs": add_reps([{**BASE, "name": f"ERR_{tag}_SASAFL_C{c}", "method": "SASAFL", "C": c, "dataset": ds, "lr": lr,
+                        "rounds": MAX_ROUNDS, "max_wall_min": RUN_MAX_WALL_MIN, "sasafl_src": str(ERR_SASAFL_SRC)}
+                       for tag, ds, lr in (("MNIST", "MNIST", 0.01), ("FMNIST", "FashionMNIST", 0.001), ("CIFAR10", "CIFAR10", 0.001))
+                       for c in (0.1, 0.3, 0.5)])},
     {"id": "E8", "dir": "E8_K10",
      "title": "K=10 — 논문의 K=100 칸 대신 (Fig. 7(b)(d), Fig. 8(b), Fig. 11, Table 4 K=10 행). "
               "BSA · SASAFL(현재 코드) · SASAFL(원저자 코드, quota 고정)",
-     "runs": [{**BASE, "K": 10, "name": f"K10_{tag}_{variant}_C{c}", "method": method, "C": c, "dataset": ds,
-               "lr": lr, "rounds": MAX_ROUNDS, "max_wall_min": RUN_MAX_WALL_MIN, "variant": variant,
-               **({"sasafl_src": str(ERR_SASAFL_SRC)} if variant == "SASAFLorig" else {})}
-              for tag, ds, lr in (("MNIST", "MNIST", 0.01), ("FMNIST", "FashionMNIST", 0.001), ("CIFAR10", "CIFAR10", 0.001))
-              for c in (0.1, 0.3, 0.5)
-              for variant, method in (("BSA", "SemiAsync"), ("SASAFL", "SASAFL"), ("SASAFLorig", "SASAFL"))]},
+     "runs": add_reps([{**BASE, "K": 10, "name": f"K10_{tag}_{variant}_C{c}", "method": method, "C": c, "dataset": ds,
+                        "lr": lr, "rounds": MAX_ROUNDS, "max_wall_min": RUN_MAX_WALL_MIN, "variant": variant,
+                        **({"sasafl_src": str(ERR_SASAFL_SRC)} if variant == "SASAFLorig" else {})}
+                       for tag, ds, lr in (("MNIST", "MNIST", 0.01), ("FMNIST", "FashionMNIST", 0.001), ("CIFAR10", "CIFAR10", 0.001))
+                       for c in (0.1, 0.3, 0.5)
+                       for variant, method in (("BSA", "SemiAsync"), ("SASAFL", "SASAFL"), ("SASAFLorig", "SASAFL"))])},
     {"id": "E6", "dir": "E6_final_summary", "title": "최종 종합 — Table 2(3개 데이터셋), Table 4(K=30), 결론 수치 점검",
      "runs": []},
 ]
@@ -119,26 +140,53 @@ def load_exp_runs(exp):
     return {spec["name"]: A.load_run(root / spec["name"]) for spec in exp["runs"]}
 
 
-def by_method_c(exp, loaded):
-    out = {}
+def grouped(exp, loaded, key):
+    """실행들을 key(spec)별로 모아 반복 평균 가상 실행으로 만든다 (완료된 반복만)."""
+    groups = {}
     for spec in exp["runs"]:
-        out[(METHOD_TAG[spec["method"]], spec["C"])] = loaded.get(spec["name"])
-    return out
+        groups.setdefault(key(spec), []).append(loaded.get(spec["name"]))
+    return {k: A.combine_runs(v) for k, v in groups.items()}
+
+
+def by_method_c(exp, loaded):
+    return grouped(exp, loaded, lambda sp: (METHOD_TAG[sp["method"]], sp["C"]))
 
 
 def status_table(exp, loaded):
-    lines = ["| 실행 | 방법 | C | 상태 | 소요(분) |", "|---|---|---:|---|---:|"]
+    """설정별 반복 진행 상황 (완료 n/10, 최고 정확도 평균 ± 표준편차)."""
+    lines = ["| 설정 (1회차 이름) | 방법 | C | 완료 반복 | 최고 정확도 평균 ± 표준편차 | 소요 평균(분) |",
+             "|---|---|---:|---:|---:|---:|"]
+    settings = {}
     for spec in exp["runs"]:
-        r = loaded[spec["name"]]
-        wall = f"{r['wall'][-1]:.1f}" if r is not None and len(r["wall"]) else "-"
-        tau = f" (τ={spec['tau']})" if exp["id"] == "E5" else ""
-        lines.append(f"| `{spec['name']}` | {spec.get('variant', METHOD_TAG[spec['method']])}{tau} | {spec['C']} | {A.status_line(r)} | {wall} |")
+        settings.setdefault(spec["setting"], []).append(spec)
+    for setting, specs in settings.items():
+        sp = specs[0]
+        runs = [loaded.get(s["name"]) for s in specs]
+        done = [r for r in runs if r is not None and r["complete"]]
+        target = len(specs) if not (exp["id"] == "E5" and sp.get("tau") == 9) else REPS
+        accs = [A.metrics(r, sp["dataset"])[0] for r in done]
+        accs = [a for a in accs if a is not None]
+        walls = [r["result"].get("wall_min") for r in done if r["result"].get("wall_min")]
+        acc_s = f"{np.mean(accs):.2f} ± {np.std(accs):.2f}" if accs else "-"
+        wall_s = f"{np.mean(walls):.0f}" if walls else "-"
+        tau = f" (τ={sp['tau']})" if exp["id"] == "E5" else ""
+        note = " (τ=9 반복은 E1 SASAFL C=0.3 재사용)" if exp["id"] == "E5" and sp.get("tau") == 9 else ""
+        lines.append(f"| `{setting}` | {sp.get('variant', METHOD_TAG[sp['method']])}{tau} | {sp['C']} | "
+                     f"{len(done)}/{target}{note} | {acc_s} | {wall_s} |")
     return "\n".join(lines)
 
 
 def partial_notes(exp, loaded):
-    return [f"{spec['name']}: {A.status_line(loaded[spec['name']])}" for spec in exp["runs"]
-            if loaded[spec["name"]] is None or not loaded[spec["name"]]["complete"]]
+    """아직 10회를 채우지 못한 설정 (표의 값은 완료된 반복만 평균)."""
+    notes = []
+    settings = {}
+    for spec in exp["runs"]:
+        settings.setdefault(spec["setting"], []).append(spec)
+    for setting, specs in settings.items():
+        done = sum(1 for s in specs if loaded.get(s["name"]) is not None and loaded[s["name"]]["complete"])
+        if done < len(specs):
+            notes.append(f"{setting}: 완료 반복 {done}/{len(specs)} (완료된 반복만 평균)")
+    return notes
 
 
 def write_summary(exp, sections):
@@ -261,12 +309,8 @@ def report_E4(exp, loaded):
 
 
 def report_E5(exp, loaded):
-    d = EXP_ROOT / exp["dir"]
-    acc_by_tau = {}
-    for spec in exp["runs"]:
-        run = loaded[spec["name"]]
-        if run is not None and run["complete"]:
-            acc_by_tau.setdefault(spec["tau"], []).append(A.metrics(run, "MNIST")[0])
+    e1 = next(e for e in EXPERIMENTS if e["id"] == "E1")
+    acc_by_tau = e5_acc_by_tau({"E5": loaded, "E1": load_exp_runs(e1)})
     md = ["| τ | 실행 수 | 평균 | 최소 | 최대 |", "|---:|---:|---:|---:|---:|"]
     for t in range(1, 11):
         v = acc_by_tau.get(t, [])
@@ -275,7 +319,8 @@ def report_E5(exp, loaded):
     best = max(acc_by_tau, key=lambda t: sum(acc_by_tau[t]) / len(acc_by_tau[t])) if acc_by_tau else None
     return ["## Fig. 5 — lag tolerance별 최고 정확도", "",
             "논문은 Fig.5의 데이터셋·C를 밝히지 않았고 설정당 10회 반복했다. "
-            "여기서는 MNIST, C=0.3으로 가정하고 τ마다 1회만 실행한다(반복 검증 생략, 완료된 실행만 집계). 그래서 박스 대신 τ별 값 하나가 찍힌다.", "",
+            "여기서는 MNIST, C=0.3으로 가정하고 τ마다 10회 반복한다(완료된 반복만 집계). "
+            "τ=9는 E1의 SASAFL C=0.3과 같은 설정이라 그 반복을 그대로 쓴다.", "",
             ] + md + ["", f"평균이 가장 높은 τ: **{best}** (논문은 τ=9 선택)" if best else "", ""]
 
 
@@ -337,11 +382,7 @@ def _build_figures(loaded_all):
     mcs = {"MNIST": by_method_c(exps["E1"], loaded_all.get("E1", {})),
            "FashionMNIST": by_method_c(exps["E2"], loaded_all.get("E2", {})),
            "CIFAR10": by_method_c(exps["E4"], loaded_all.get("E4", {}))}
-    acc_by_tau = {}
-    for spec in exps["E5"]["runs"]:
-        run = loaded_all.get("E5", {}).get(spec["name"])
-        if run is not None and run["complete"]:
-            acc_by_tau.setdefault(spec["tau"], []).append(A.metrics(run, "MNIST")[0])
+    acc_by_tau = e5_acc_by_tau(loaded_all)
     dirs = {eid: EXP_ROOT / exps[eid]["dir"] for eid in ("E1", "E2", "E4", "E5", "E6", "E7", "E8")}
     made = PF.build_all(mcs, acc_by_tau, dirs, MAX_ROUNDS, k10_mc(loaded_all, "SASAFL"))
     for eid, names in PF.build_err(mcs, err_sasafl(loaded_all), dirs, MAX_ROUNDS,
@@ -354,11 +395,12 @@ ERR_DATASETS = (("MNIST", "MNIST", "E1"), ("FMNIST", "FashionMNIST", "E2"), ("CI
 
 
 def k10_mc(loaded_all, variant):
-    """E8 실행 → {dataset: {(BSA|SASAFL, C): run}}. variant: 'SASAFL'(현재 코드) | 'SASAFLorig'(원저자 코드)"""
-    loaded = loaded_all.get("E8", {})
-    return {ds: {**{("BSA", c): loaded.get(f"K10_{tag}_BSA_C{c}") for c in (0.1, 0.3, 0.5)},
-                 **{("SASAFL", c): loaded.get(f"K10_{tag}_{variant}_C{c}") for c in (0.1, 0.3, 0.5)}}
-            for tag, ds, _ in ERR_DATASETS}
+    """E8 실행 → {dataset: {(BSA|SASAFL, C): 반복 평균 run}}. variant: 'SASAFL'(현재 코드) | 'SASAFLorig'(원저자 코드)"""
+    exp = next(e for e in EXPERIMENTS if e["id"] == "E8")
+    g = grouped(exp, loaded_all.get("E8", {}), lambda sp: (sp["dataset"], sp["variant"], sp["C"]))
+    return {ds: {**{("BSA", c): g.get((ds, "BSA", c)) for c in (0.1, 0.3, 0.5)},
+                 **{("SASAFL", c): g.get((ds, variant, c)) for c in (0.1, 0.3, 0.5)}}
+            for _, ds, _ in ERR_DATASETS}
 
 
 def report_E8(exp, loaded):
@@ -383,9 +425,98 @@ def report_E8(exp, loaded):
 
 
 def err_sasafl(loaded_all):
-    """E7 실행 → {dataset: {C: run}}"""
-    loaded = loaded_all.get("E7", {})
-    return {ds: {c: loaded.get(f"ERR_{tag}_SASAFL_C{c}") for c in (0.1, 0.3, 0.5)} for tag, ds, _ in ERR_DATASETS}
+    """E7 실행 → {dataset: {C: 반복 평균 run}}"""
+    exp = next(e for e in EXPERIMENTS if e["id"] == "E7")
+    g = grouped(exp, loaded_all.get("E7", {}), lambda sp: (sp["dataset"], sp["C"]))
+    return {ds: {c: g.get((ds, c)) for c in (0.1, 0.3, 0.5)} for _, ds, _ in ERR_DATASETS}
+
+
+def e5_acc_by_tau(loaded_all):
+    """τ별 반복의 최고 정확도 목록 (Fig.5 박스플롯). τ=9는 LT_tau9_rep1(=E1 1회차 링크) + E1 SASAFL C=0.3 2~10회차."""
+    exps = {e["id"]: e for e in EXPERIMENTS}
+    out = {}
+    for spec in exps["E5"]["runs"]:
+        run = loaded_all.get("E5", {}).get(spec["name"])
+        if run is not None and run["complete"]:
+            out.setdefault(spec["tau"], []).append(A.metrics(run, "MNIST")[0])
+    for spec in exps["E1"]["runs"]:
+        if spec["method"] == "SASAFL" and spec["C"] == 0.3 and spec["rep"] >= 2:
+            run = loaded_all.get("E1", {}).get(spec["name"])
+            if run is not None and run["complete"]:
+                out.setdefault(9, []).append(A.metrics(run, "MNIST")[0])
+    return out
+
+
+def write_repeat_files(exp, loaded):
+    """반복 실험 값을 실험 폴더의 repeats/에 파일로 나눠 저장한다.
+    - runs_index.csv: 실행(반복) 하나당 한 줄 — 설정, 회차, 노드, 최고 정확도, 도달 라운드/시간, 소요 시간, 폴더
+    - summary_by_setting.csv: 설정별 완료 반복 수와 평균·표준편차·최소·최대
+    - curves/<설정>.csv: 라운드별 정확도 (회차별 열 + 평균·표준편차) — 그림이 쓰는 반복 평균 곡선"""
+    import csv
+    d = EXP_ROOT / exp["dir"] / "repeats"
+    (d / "curves").mkdir(parents=True, exist_ok=True)
+    root = runs_root(exp)
+    settings = {}
+    with (d / "runs_index.csv").open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["setting", "rep", "run_name", "method", "variant", "dataset", "K", "C", "tau", "host", "outcome",
+                    "rounds_done", "best_acc", "round_to_acc", "time_to_acc_min", "wall_min", "run_dir"])
+        for spec in exp["runs"]:
+            run = loaded.get(spec["name"])
+            settings.setdefault(spec["setting"], []).append((spec, run))
+            if run is None:
+                w.writerow([spec["setting"], spec["rep"], spec["name"], METHOD_TAG[spec["method"]], spec.get("variant", ""),
+                            spec["dataset"], spec["K"], spec["C"], spec.get("tau", ""), "", "not_run"] + [""] * 6)
+                continue
+            m = A.metrics(run, spec["dataset"])
+            w.writerow([spec["setting"], spec["rep"], spec["name"], METHOD_TAG[spec["method"]], spec.get("variant", ""),
+                        spec["dataset"], spec["K"], spec["C"], spec.get("tau", ""), run["cfg"].get("host", "wise-175"),
+                        run["result"].get("outcome", "running"), run["rounds_done"],
+                        "" if m[0] is None else f"{m[0]:.2f}", "" if m[1] is None else m[1],
+                        "" if m[2] is None else f"{m[2]:.2f}", run["result"].get("wall_min", ""),
+                        os.path.relpath(root / spec["name"], EXP_ROOT / exp["dir"])])
+    with (d / "summary_by_setting.csv").open("w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["setting", "method", "variant", "dataset", "K", "C", "tau", "reps_done", "reps_target",
+                    "best_acc_mean", "best_acc_std", "best_acc_min", "best_acc_max",
+                    "round_to_acc_mean", "time_to_acc_mean_min", "reps_reached_target", "wall_min_mean"])
+        for setting, items in settings.items():
+            sp = items[0][0]
+            done = [r for _, r in items if r is not None and r["complete"]]
+            ms = [A.metrics(r, sp["dataset"]) for r in done]
+            accs = [m[0] for m in ms if m[0] is not None]
+            hit = [m for m in ms if m[1] is not None]
+            walls = [r["result"].get("wall_min") for r in done if r["result"].get("wall_min")]
+            fmt = lambda v: "" if v is None else f"{v:.2f}"
+            w.writerow([setting, METHOD_TAG[sp["method"]], sp.get("variant", ""), sp["dataset"], sp["K"], sp["C"],
+                        sp.get("tau", ""), len(done), len(items),
+                        fmt(np.mean(accs) if accs else None), fmt(np.std(accs) if accs else None),
+                        fmt(min(accs) if accs else None), fmt(max(accs) if accs else None),
+                        fmt(np.mean([m[1] for m in hit]) if hit else None), fmt(np.mean([m[2] for m in hit]) if hit else None),
+                        len(hit), fmt(np.mean(walls) if walls else None)])
+            comb = A.combine_runs([r for _, r in items])
+            if comb is None:
+                continue
+            with (d / "curves" / f"{setting}.csv").open("w", newline="") as cf:
+                cw = csv.writer(cf)
+                reps = comb["reps"]
+                cw.writerow(["round"] + [f"rep_{r['name']}" for r in reps] + ["mean", "std"])
+                for i, rnd in enumerate(comb["rounds"]):
+                    vals = [r["acc"][np.searchsorted(r["rounds"], rnd)] for r in reps]
+                    cw.writerow([int(rnd)] + [f"{v:.2f}" for v in vals] + [f"{comb['acc'][i]:.3f}", f"{comb['acc_std'][i]:.3f}"])
+
+
+def queue_order():
+    """두 노드가 나눠 돌릴 순서: 남은 1회차(E5) → 2회차 전체 → 3회차 전체 … (회차 단위로 한 벌씩 완성).
+    한 회차 안에서는 Table 2 핵심(E1·E2·E4) → E7(원저자 코드) → E8(K=10) → E5(τ) 순."""
+    order = []
+    exps = {e["id"]: e for e in EXPERIMENTS}
+    for r in range(1, REPS + 1):
+        for eid in ("E1", "E2", "E4", "E7", "E8", "E5"):
+            for spec in exps[eid]["runs"]:
+                if spec["rep"] == r:
+                    order.append((eid, spec["name"], os.path.relpath(runs_root(exps[eid]) / spec["name"], K30)))
+    return order
 
 
 def quota_summary(run, c, k=30):
@@ -460,7 +591,11 @@ def build_report(exp, loaded_all):
             sections = figs + report_E6(exp, loaded_all)
         else:
             loaded = loaded_all[exp["id"]]
-            sections = figs + ["## 실행 상태", "", status_table(exp, loaded), ""] + REPORTS[exp["id"]](exp, loaded)
+            write_repeat_files(exp, loaded)
+            sections = figs + ["## 반복 실행 상태 (그림은 완료된 반복의 평균 곡선, 표는 반복별 값의 평균)", "",
+                               status_table(exp, loaded), "",
+                               "반복 값 파일: `repeats/runs_index.csv`(실행별), `repeats/summary_by_setting.csv`(설정별 평균·표준편차), "
+                               "`repeats/curves/<설정>.csv`(라운드별 회차 값과 평균)", ""] + REPORTS[exp["id"]](exp, loaded)
         write_summary(exp, sections)
     except Exception:
         (d / "report_error.log").write_text(traceback.format_exc())
@@ -502,6 +637,10 @@ def run_experiment(exp, port_counter, stall_min, attempts, names=None):
         if existing is not None and existing["complete"]:
             continue
         owner = claim(spec["name"])
+        while owner is None:   # claim 폴더(wise-175)에 닿지 않음 → 건너뛰지 말고 다시 닿을 때까지 기다린다
+            log_progress(f"{exp['id']} claim 확인 실패: {spec['name']} — 2분 뒤 다시 시도")
+            time.sleep(120)
+            owner = claim(spec["name"])
         if owner != socket.gethostname():
             log_progress(f"{exp['id']} 건너뜀: {spec['name']} (차지한 노드: {owner or '확인 실패'})")
             continue
@@ -528,7 +667,12 @@ def main():
     parser.add_argument("--attempts", type=int, default=2)
     parser.add_argument("--names", nargs="*", help="이 실행 이름들만 돌린다 (두 노드에 나눠 돌릴 때)")
     parser.add_argument("--quiet", action="store_true", help="PROGRESS.md에 기록하지 않음")
+    parser.add_argument("--print-queue", action="store_true", help="두 노드 실행 순서 출력: 실험ID 실행이름 실행폴더(k30_reproduction 기준)")
     args = parser.parse_args()
+    if args.print_queue:
+        for eid, name, rel in queue_order():
+            print(eid, name, rel)
+        return
     global QUIET
     QUIET = args.quiet
     exps = [e for e in EXPERIMENTS if not args.only or e["id"] in args.only]

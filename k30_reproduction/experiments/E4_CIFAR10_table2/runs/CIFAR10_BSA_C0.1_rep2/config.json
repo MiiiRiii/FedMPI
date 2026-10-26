@@ -1,0 +1,23 @@
+{
+  "mode": "single",
+  "cats": "1,2,3,4,8",
+  "K": 30,
+  "batch": 32,
+  "epochs": 5,
+  "target": 1.0,
+  "tau": 9,
+  "name": "CIFAR10_BSA_C0.1_rep2",
+  "method": "SemiAsync",
+  "C": 0.1,
+  "dataset": "CIFAR10",
+  "lr": 0.001,
+  "rounds": 500,
+  "max_wall_min": 1500,
+  "rep": 2,
+  "setting": "CIFAR10_BSA_C0.1",
+  "cmd": "bash /home/wise-175/Mando/FedMPI/k30_reproduction/launch.sh SemiAsync 0.1 30 single 1,2,3,4,8",
+  "run_id": "CIFAR10_BSA_C0.1_rep2_1792848605",
+  "start": "2026-10-24T22:30:05",
+  "host": "wise-175",
+  "cpu_list": ""
+}

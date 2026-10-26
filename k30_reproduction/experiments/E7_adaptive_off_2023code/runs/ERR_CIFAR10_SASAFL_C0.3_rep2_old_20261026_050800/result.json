@@ -1,0 +1,19 @@
+{
+  "name": "ERR_CIFAR10_SASAFL_C0.3_rep2",
+  "outcome": "crashed",
+  "returncode": 1,
+  "wall_min": 0.1,
+  "rounds_done": 0,
+  "rounds_requested": 500,
+  "best_acc": null,
+  "last_acc": null,
+  "errors": {
+    "is_set_corruption": 0,
+    "segfault": 1,
+    "abort": 0,
+    "connection_closed": 0,
+    "gloo_timeout": 0,
+    "traceback": 1,
+    "child_failed": 2
+  }
+}

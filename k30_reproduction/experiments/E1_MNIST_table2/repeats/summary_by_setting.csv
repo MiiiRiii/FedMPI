@@ -1,0 +1,7 @@
+setting,method,variant,dataset,K,C,tau,reps_done,reps_target,best_acc_mean,best_acc_std,best_acc_min,best_acc_max,round_to_acc_mean,time_to_acc_mean_min,reps_reached_target,wall_min_mean
+T2_MNIST_BSA_C0.1_single_cats12348,BSA,,MNIST,30,0.1,9,2,10,96.76,0.14,96.62,96.90,278.50,22.65,2,40.27
+T2_MNIST_BSA_C0.3_single_cats12348,BSA,,MNIST,30,0.3,9,2,10,98.41,0.12,98.28,98.53,98.50,39.57,2,205.33
+T2_MNIST_BSA_C0.5_single_cats12348,BSA,,MNIST,30,0.5,9,2,10,98.81,0.05,98.77,98.86,54.50,36.53,2,341.37
+T2_MNIST_SASAFL_C0.1_single_cats12348,SASAFL,,MNIST,30,0.1,9,2,10,94.38,0.81,93.57,95.18,447.00,149.16,1,152.56
+T2_MNIST_SASAFL_C0.3_single_cats12348,SASAFL,,MNIST,30,0.3,9,2,10,98.54,0.01,98.53,98.55,83.00,68.76,2,400.24
+T2_MNIST_SASAFL_C0.5_single_cats12348,SASAFL,,MNIST,30,0.5,9,2,10,98.81,0.02,98.79,98.84,62.50,78.02,2,594.41

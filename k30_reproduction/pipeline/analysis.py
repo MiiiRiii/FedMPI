@@ -11,6 +11,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
+import warnings  # noqa: E402
+warnings.filterwarnings("ignore", "Mean of empty slice")
 from matplotlib import font_manager  # noqa: E402
 from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
@@ -67,8 +69,41 @@ def load_run(run_dir):
     }
 
 
+def combine_runs(runs):
+    """같은 설정의 반복 실행들(완료된 것만) → 반복 평균 '가상 실행'.
+    그림용 곡선은 라운드별 평균, 표용 지표는 반복마다 구한 뒤 평균한다(metrics/wall_at_round가 reps를 본다).
+    반복이 없으면 None."""
+    runs = [r for r in runs if r is not None and r["complete"]]
+    if not runs:
+        return None
+    rounds = runs[0]["rounds"]
+    for r in runs[1:]:
+        rounds = np.intersect1d(rounds, r["rounds"])
+
+    def stack(key):
+        return np.vstack([r[key][np.searchsorted(r["rounds"], rounds)] for r in runs])
+    return {
+        "dir": runs[0]["dir"], "name": runs[0]["name"], "cfg": runs[0]["cfg"], "result": runs[0]["result"],
+        "rounds": rounds, "acc": stack("acc").mean(axis=0), "acc_std": stack("acc").std(axis=0),
+        "loss": np.nanmean(stack("loss"), axis=0), "wall": np.nanmean(stack("wall"), axis=0),
+        "quota": np.concatenate([r["quota"] for r in runs]),
+        "rounds_done": int(rounds.max()) if len(rounds) else 0, "requested": runs[0]["requested"],
+        "complete": True, "reps": runs,
+    }
+
+
 def metrics(run, dataset):
-    """논문 정의: 최고 정확도, 목표 첫 도달 라운드, 그때까지 경과 시간(분)."""
+    """논문 정의: 최고 정확도, 목표 첫 도달 라운드, 그때까지 경과 시간(분).
+    반복 평균 실행(reps)이면 반복마다 구해 평균한다. 도달 라운드·시간은 반복의 절반 이상이 도달했을 때만
+    도달한 반복들의 평균을 쓰고, 아니면 '-'(None)."""
+    if run is not None and "reps" in run:
+        each = [metrics(r, dataset) for r in run["reps"]]
+        accs = [m[0] for m in each if m[0] is not None]
+        hit = [m for m in each if m[1] is not None]
+        reached = len(hit) * 2 >= len(each)
+        return (float(np.mean(accs)) if accs else None,
+                float(np.mean([m[1] for m in hit])) if hit and reached else None,
+                float(np.mean([m[2] for m in hit])) if hit and reached else None)
     if run is None or len(run["acc"]) == 0:
         return (None, None, None)
     mask = run["rounds"] >= 1
@@ -84,6 +119,10 @@ def metrics(run, dataset):
 
 
 def wall_at_round(run, rnd):
+    if run is not None and "reps" in run:
+        v = [wall_at_round(r, rnd) for r in run["reps"]]
+        v = [x for x in v if x is not None]
+        return float(np.mean(v)) if v else None
     if run is None:
         return None
     idx = np.nonzero(run["rounds"] >= rnd)[0]

@@ -1,0 +1,66 @@
+[k30] mode=single method=SASAFL C=0.3 K=30 categories=1,2,3,4,8 threads=1214484118823213324882342183341
+[k30] SASAFL.py 교체: /home/wise-175/Mando/FedMPI/k30_reproduction/original_code/SASAFL_c0b819b.py sha256=7c4ca5fde677ccb0228db25a95f0efc4994bf660a22a7c24b3075828ceb38c72
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411083 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411084 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411085 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411086 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411087 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411088 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411089 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411090 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411091 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411092 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411094 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411095 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411096 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411098 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411099 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411100 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411102 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411103 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411106 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411107 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411109 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411112 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411114 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411116 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411119 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411120 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411123 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411128 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411131 closing signal SIGTERM
+WARNING:torch.distributed.elastic.multiprocessing.api:Sending process 1411133 closing signal SIGTERM
+ERROR:torch.distributed.elastic.multiprocessing.api:failed (exitcode: -11) local_rank: 27 (pid: 1411126) of binary: /home/wise-175/anaconda3/envs/FL/bin/python
+Traceback (most recent call last):
+  File "/home/wise-175/anaconda3/envs/FL/lib/python3.8/runpy.py", line 194, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/home/wise-175/anaconda3/envs/FL/lib/python3.8/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/home/wise-175/anaconda3/envs/FL/lib/python3.8/site-packages/torch/distributed/run.py", line 765, in <module>
+    main()
+  File "/home/wise-175/anaconda3/envs/FL/lib/python3.8/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 345, in wrapper
+    return f(*args, **kwargs)
+  File "/home/wise-175/anaconda3/envs/FL/lib/python3.8/site-packages/torch/distributed/run.py", line 761, in main
+    run(args)
+  File "/home/wise-175/anaconda3/envs/FL/lib/python3.8/site-packages/torch/distributed/run.py", line 752, in run
+    elastic_launch(
+  File "/home/wise-175/anaconda3/envs/FL/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 131, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+  File "/home/wise-175/anaconda3/envs/FL/lib/python3.8/site-packages/torch/distributed/launcher/api.py", line 245, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+=========================================================
+k30_reproduction/harness_entry.py FAILED
+---------------------------------------------------------
+Failures:
+  <NO_OTHER_FAILURES>
+---------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-10-26_05:07:44
+  host      : wise-175
+  rank      : 27 (local_rank: 27)
+  exitcode  : -11 (pid: 1411126)
+  error_file: <N/A>
+  traceback : Signal 11 (SIGSEGV) received by PID 1411126
+=========================================================
