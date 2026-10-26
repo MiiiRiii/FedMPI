@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>차량 FL 장애 시뮬레이터</title>
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <span class="logo">◆</span>
+    <div>
+      <h1>차량 연합학습 장애 시뮬레이터</h1>
+      <p>실제 SASAFL 학습 + 주행 환경 · 서버가 받은 모습 기준 9개 패턴 / 39개 예시</p>
+    </div>
+  </div>
+  <div class="controls">
+    <span id="runChip" class="chip">정지</span>
+    <span id="runInfo" class="muted"></span>
+    <button id="btnStart" class="btn primary">▶ 시작</button>
+    <button id="btnStop" class="btn">■ 정지</button>
+    <button id="btnCrash" class="btn danger" title="9-1 집계 서버 장애">서버 장애</button>
+  </div>
+</header>
+
+<main>
+  <!-- 왼쪽: 맵 / 유스케이스 / 사건 기록 -->
+  <section class="col col-map">
+    <nav class="tabs" data-group="left">
+      <button class="tab active" data-tab="map">시뮬레이션 맵</button>
+      <button class="tab" data-tab="cases">유스케이스 39</button>
+      <button class="tab" data-tab="log">사건 기록</button>
+    </nav>
+    <div class="tabpane active" id="pane-map">
+      <div id="map3d"></div>
+      <div class="map-overlay top-left">
+        <div class="legend" id="legendState"></div>
+      </div>
+      <div class="map-overlay top-right">
+        <label><input type="checkbox" id="optCells" checked> 셀 범위</label>
+        <label><input type="checkbox" id="optLabels" checked> 이름표</label>
+        <label><input type="checkbox" id="optBeams" checked> 업로드 선</label>
+        <button class="btn small" id="btnView">전체 보기</button>
+      </div>
+      <div class="map-overlay bottom-left" id="toastBox"></div>
+      <div class="map-overlay bottom-right legend" id="legendPlaces"></div>
+    </div>
+    <div class="tabpane" id="pane-cases"><div id="caseTable"></div></div>
+    <div class="tabpane" id="pane-log">
+      <div class="log-filter" id="logFilter"></div>
+      <div id="logList" class="log-list"></div>
+    </div>
+  </section>
+
+  <!-- 가운데: 연합학습 상태 -->
+  <section class="col col-fl">
+    <div class="card">
+      <div class="card-title">연합학습 상태 <span id="flPhase" class="chip small"></span></div>
+      <div class="kpis">
+        <div class="kpi"><span>라운드</span><b id="kRound">-</b></div>
+        <div class="kpi"><span>정확도</span><b id="kAcc">-</b></div>
+        <div class="kpi"><span>quota</span><b id="kQuota">-</b></div>
+        <div class="kpi"><span>버퍼</span><b id="kBuf">-</b></div>
+      </div>
+      <div class="waitbar"><div id="waitFill"></div><span id="waitText">대기 0초</span></div>
+      <canvas id="accChart" height="110"></canvas>
+      <div class="vehgrid" id="vehGrid"></div>
+    </div>
+    <div class="card grow">
+      <div class="card-title">라운드별 참여 차량 <span class="muted small">(도착 순서대로 표시)</span></div>
+      <div id="roundFeed" class="round-feed"></div>
+    </div>
+    <div class="card grow">
+      <div class="card-title">실시간 사건 <span class="muted small">패턴 번호 = 서버가 받은 모습</span></div>
+      <div id="eventFeed" class="event-feed"></div>
+    </div>
+  </section>
+
+  <!-- 오른쪽: 설정 -->
+  <section class="col col-cfg">
+    <nav class="tabs" data-group="right">
+      <button class="tab active" data-tab="veh">차량 설정</button>
+      <button class="tab" data-tab="global">전체 설정</button>
+    </nav>
+    <div class="tabpane active" id="pane-veh">
+      <div id="vehPicker" class="veh-picker"></div>
+      <div id="vehInfo" class="veh-info"></div>
+      <div id="vehForm" class="form"></div>
+      <p class="muted small">값은 바로 반영됩니다. <span class="restart">재시작</span> 표시는 다음 시작부터 적용됩니다.</p>
+    </div>
+    <div class="tabpane" id="pane-global">
+      <div class="presets">
+        <div class="fgroup">시나리오 프리셋</div>
+        <button class="btn small" id="presetAll" title="차량마다 다른 장애를 걸어 39개 예시가 한 맵에서 모두 일어나게 한다">39개 전부 보이기</button>
+        <button class="btn small" id="presetClean" title="장애 설정을 모두 끈다 (주행 환경에 따른 끊김만 남음)">장애 설정 끄기</button>
+        <p class="muted small" id="presetNote"></p>
+      </div>
+      <div id="globalForm" class="form"></div>
+      <button class="btn small" id="btnReset">기본값으로</button>
+    </div>
+  </section>
+</main>
+
+<div id="tooltip" class="tooltip"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
